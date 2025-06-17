@@ -1,0 +1,30 @@
+{
+  "name": "leek-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.1.0",
+    "axios": "^1.4.0",
+    "echarts": "^5.6.0",
+    "element-plus": "^2.3.9",
+    "mitt": "^3.0.1",
+    "pinia": "^2.1.6",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.3.1",
+    "eslint": "^8.46.0",
+    "eslint-plugin-vue": "^9.16.1",
+    "favicons": "^7.2.0",
+    "favicons-webpack-plugin": "^6.0.1",
+    "sass": "^1.69.5",
+    "vite": "^4.4.9"
+  }
+}
