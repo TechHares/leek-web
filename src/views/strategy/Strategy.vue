@@ -84,7 +84,7 @@
               {{ formatDate(scope.row.created_at) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="180">
+          <el-table-column label="操作" align="center" width="320">
             <template #default="scope">
               <el-tooltip content="编辑" placement="top">
                 <el-button
@@ -96,10 +96,32 @@
                 </el-button>
               </el-tooltip>
               
+              <el-tooltip v-if="scope.row.is_enabled" content="查看数据" placement="top">
+                <el-button
+                  size="small"
+                  type="primary"
+                  @click="handleViewData(scope.row)"
+                  circle
+                >
+                  <el-icon><DataAnalysis /></el-icon>
+                </el-button>
+              </el-tooltip>
+              
+              <el-tooltip v-if="scope.row.is_enabled" content="清除运行时数据" placement="top">
+                <el-button
+                  size="small"
+                  type="info"
+                  @click="handleClearRuntimeData(scope.row)"
+                  circle
+                >
+                <el-icon><Discount /></el-icon>
+                </el-button>
+              </el-tooltip>
+              
               <el-tooltip v-if="!scope.row.is_enabled" content="启用" placement="top">
                 <el-button
                   size="small"
-                  type="success"
+                  type="primary"
                   @click="handleEnable(scope.row)"
                   circle
                 >
@@ -116,14 +138,14 @@
                   <el-icon><RemoveFilled /></el-icon>
                 </el-button>
               </el-tooltip>
-              <el-tooltip v-else content="启用" placement="top">
+              <el-tooltip content="回测" placement="top">
                 <el-button
                   size="small"
-                  type="primary"
+                  type="success"
                   @click="handleRun(scope.row)"
                   circle
                 >
-                  <el-icon><RefreshLeft /></el-icon>
+                  <el-icon><Odometer /></el-icon>
                 </el-button>
               </el-tooltip>
               <el-tooltip v-if="!scope.row.is_enabled" content="删除" placement="top">
@@ -208,7 +230,7 @@
                       effect="plain"
                       style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
                     >
-                      {{ item.tag }}
+                      {{ formatTag(item.tag) }}
                     </el-tag>
                   </span>
                 </el-tooltip>
@@ -221,7 +243,7 @@
                     effect="plain"
                     style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
                   >
-                    {{ item.tag }}
+                    {{ formatTag(item.tag) }}
                   </el-tag>
                 </span>
               </el-option>
@@ -259,7 +281,7 @@
                     effect="plain"
                     style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
                   >
-                    {{ item.tag }}
+                    {{ formatTag(item.tag) }}
                   </el-tag>
                 </span>
               </el-tooltip>
@@ -272,7 +294,7 @@
                   effect="plain"
                   style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
                 >
-                  {{ item.tag }}
+                  {{ formatTag(item.tag) }}
                 </el-tag>
               </span>
             </el-option>
@@ -572,6 +594,9 @@
             </el-col>
           </el-row>
         </el-form-item>
+        <el-form-item v-if="dialogStatus === 'create'" label="是否启用" prop="is_enabled">
+          <el-switch v-model="temp.is_enabled" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="text-end">
@@ -582,16 +607,25 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 策略数据查看组件 -->
+    <StrategyDataViewer
+      v-if="dataDialogVisible && currentStrategyData && currentStrategyData.id"
+      :visible="dataDialogVisible"
+      :strategy-id="currentStrategyData.id"
+      @update:visible="dataDialogVisible = $event"
+    />
   </div>
 </template>
 
 <script>
-import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy } from '@/api/strategy'
+import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy, updateStrategyState } from '@/api/strategy'
 import { getDataSources } from '@/api/dataSource'
 import { getEnterStrategies, getExitStrategies } from '@/api/strategy'
 import { getRiskPolicies } from '@/api/risk'
 import Pagination from '@/components/Pagination/index.vue'
-import { Plus, Edit, Delete, VideoPlay, RemoveFilled, RefreshLeft } from '@element-plus/icons-vue'
+import StrategyDataViewer from '@/components/StrategyDataViewer.vue'
+import { Plus, Edit, Delete, VideoPlay, RemoveFilled, RefreshLeft, DataAnalysis, RefreshRight } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/format'
 import { formatTag } from '@/utils/format'
 import {
@@ -608,7 +642,7 @@ import { fetchDataSourceParameters } from '@/api/dataSource'
 
 export default {
   name: 'Strategy',
-  components: { Pagination, DynamicForm },
+  components: { Pagination, DynamicForm, StrategyDataViewer },
   data() {
     return {
       list: null,
@@ -624,6 +658,9 @@ export default {
       temp: {
         id: undefined,
         name: '',
+        description: '',
+        class_name: '',
+        strategy_params: {},
         data_source_config: null,
         data_source_params: {},
         position_config: null,
@@ -633,7 +670,8 @@ export default {
         exit_strategy_config: {},
         risk_policies: [],
         selectedDataSourceCls: [],
-        info_fabricator_configs: []
+        info_fabricator_configs: [],
+        is_enabled: false
       },
       rules: {
         name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -672,7 +710,9 @@ export default {
       infoFabricatorCollapse: [],
       infoFabricatorTemplates: [],
       selectedInfoFabricatorIdx: 0,
-      entryExitCollapse: []
+      entryExitCollapse: [],
+      dataDialogVisible: false,
+      currentStrategyData: null
     }
   },
   computed: {
@@ -818,6 +858,9 @@ export default {
       this.temp = {
         id: undefined,
         name: '',
+        description: '',
+        class_name: '',
+        strategy_params: {},
         data_source_config: null,
         data_source_params: {},
         position_config: null,
@@ -827,7 +870,8 @@ export default {
         exit_strategy_config: {},
         risk_policies: [],
         selectedDataSourceCls: [],
-        info_fabricator_configs: []
+        info_fabricator_configs: [],
+        is_enabled: false
       }
       this.currentDataSource = null
       this.currentDataSourceParameters = []
@@ -839,6 +883,7 @@ export default {
       this.collapsePositionConfig()
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
+      this.fetchStrategies()
       const defaultEnter = this.enterStrategyOptions.find(i => i.value === 'leek_core.sub_strategy.base|EnterStrategy')
       if (defaultEnter) {
         this.temp.enter_strategy_class_name = defaultEnter.value || ''
@@ -884,10 +929,12 @@ export default {
               .filter((tpl, idx) => this.isInfoFabricatorEnabled(tpl.cls))
               .map(tpl => ({
                 class_name: tpl.cls,
-                config: (this.infoFabricatorTemplates.find(p => p.name === tpl.name)?.params) || {}
+                config: (this.temp.info_fabricator_configs || []).find(p => p.class_name === tpl.cls)?.params || {}
               }))
             tempToSubmit.data_source_params = undefined
+            tempToSubmit.is_enabled = this.temp.is_enabled
             await createStrategy(tempToSubmit)
+            this.isEnabledFilter = this.temp.is_enabled
             this.dialogFormVisible = false
             this.$message.success('创建成功')
             this.getList()
@@ -900,6 +947,7 @@ export default {
     handleUpdate(row) {
       // 基础字段
       this.collapsePositionConfig()
+      this.fetchStrategies()
       this.temp = {
         id: row.id,
         name: row.name || '',
@@ -920,6 +968,7 @@ export default {
               params: cfg.config || {}
             }))
           : [],
+        is_enabled: row.is_enabled || false
       }
       // 设置策略模板以显示参数
       if (row.class_name) {
@@ -984,9 +1033,10 @@ export default {
               .filter((tpl, idx) => this.isInfoFabricatorEnabled(tpl.cls))
               .map(tpl => ({
                 class_name: tpl.cls,
-                config: (this.infoFabricatorTemplates.find(p => p.name === tpl.name)?.params) || {}
+                config: (this.temp.info_fabricator_configs || []).find(p => p.class_name === tpl.cls)?.params || {}
               }))
             tempToSubmit.data_source_params = undefined
+            tempToSubmit.is_enabled = this.temp.is_enabled
             await updateStrategy(this.temp.id, tempToSubmit)
             this.dialogFormVisible = false
             this.$message.success('更新成功')
@@ -1219,6 +1269,26 @@ export default {
         found.enabled = val
       } else {
         this.temp.info_fabricator_configs.push({ class_name: cls, enabled: val, params: {} })
+      }
+    },
+    async handleViewData(row) {
+      this.currentStrategyData = row
+      this.dataDialogVisible = true
+    },
+    async handleClearRuntimeData(row) {
+      try {
+        await this.$confirm('确认清除该策略的运行时数据?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await updateStrategyState(row.id, {})
+        this.$message.success('运行时数据已清除')
+        this.getList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          this.$message.error('清除运行时数据失败')
+        }
       }
     }
   }

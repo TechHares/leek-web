@@ -37,13 +37,11 @@
             />
 
             <!-- Boolean input -->
-            <input
-              v-else-if="field.type === 'boolean'"
-              type="checkbox"
+            <el-switch
+              v-else-if="field.type === 'bool'"
               :id="field.name"
               v-model="formData[field.name]"
               :required="field.required"
-              class="form-check-input"
             />
 
             <!-- Datetime input -->

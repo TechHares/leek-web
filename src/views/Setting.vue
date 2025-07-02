@@ -85,8 +85,9 @@
 
     <el-card class="mt-4" header="">
       <div class="card-content-left">
-        <el-button type="success" @click="refreshMountDirs" :loading="refreshingMountDirs" style="margin-right: 16px;">刷新挂载目录</el-button>
+        <el-button type="success" @click="refreshMountDirs" :loading="refreshingMountDirs" >刷新挂载目录</el-button>
         <el-button type="danger" @click="restartEngine" :loading="restarting">重启引擎</el-button>
+        <el-button type="warning" @click="resetPositionState" :loading="resettingPositionState">重置仓位状态</el-button>
       </div>
     </el-card>
   </div>
@@ -94,9 +95,9 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { getProjectConfig, saveProjectConfig, getAlarmTemplates, refreshMountDirs as refreshMountDirsApi, restartEngine as restartEngineApi } from '@/api/config'
+import { getProjectConfig, saveProjectConfig, getAlarmTemplates, refreshMountDirs as refreshMountDirsApi, restartEngine as restartEngineApi, resetPositionState as resetPositionStateApi } from '@/api/config'
 import DynamicForm from '@/components/DynamicForm.vue'
 
 const form = ref({
@@ -112,6 +113,7 @@ const saving = ref(false)
 const alarmTemplates = ref([])
 const restarting = ref(false)
 const refreshingMountDirs = ref(false)
+const resettingPositionState = ref(false)
 
 const loadConfig = async () => {
   const projectId = localStorage.getItem('current_project_id')
@@ -211,30 +213,66 @@ watch(() => form.value.alert_methods, (newMethods, oldMethods) => {
 }, { deep: true })
 
 const restartEngine = async () => {
-  restarting.value = true
   try {
+    await ElMessageBox.confirm('确认重启交易引擎?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    restarting.value = true
     await restartEngineApi()
     ElMessage.success('重启指令已发送')
   } catch (e) {
-    ElMessage.error('重启失败')
+    if (e !== 'cancel') {
+      ElMessage.error('重启失败')
+    }
   } finally {
     restarting.value = false
   }
 }
 
 const refreshMountDirs = async () => {
-  refreshingMountDirs.value = true
   try {
+    await ElMessageBox.confirm('确认刷新挂载目录?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    refreshingMountDirs.value = true
     await refreshMountDirsApi()
     ElMessage.success('挂载目录已刷新')
   } catch (e) {
-    ElMessage.error('刷新挂载目录失败')
+    if (e !== 'cancel') {
+      ElMessage.error('刷新挂载目录失败')
+    }
   } finally {
     refreshingMountDirs.value = false
   }
 }
 
-onMounted(loadConfig)
+const resetPositionState = async () => {
+  try {
+    await ElMessageBox.confirm('确认重置仓位状态? 该操作会清除所有策略的仓位信息，请谨慎操作!', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    resettingPositionState.value = true
+    await resetPositionStateApi()
+    ElMessage.success('重置仓位状态成功')
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('重置仓位状态失败')
+    }
+  } finally {
+    resettingPositionState.value = false
+  }
+}
+
+onMounted(() => {
+  loadConfig()
+})
+
 watch(() => form.value.alert_config, v => {
   alertConfigStr.value = JSON.stringify(v, null, 2)
 })

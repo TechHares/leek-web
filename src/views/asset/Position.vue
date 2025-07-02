@@ -311,7 +311,7 @@ export default {
     },
     async handleClose(row) {
       try {
-        await this.$confirm('确认平仓该仓位?', '提示', {
+        await this.$confirm('确认平仓该仓位(平仓不会立即修改仓位状态，需要等待策略执行器处理，请勿重复平仓)?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'

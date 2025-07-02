@@ -40,3 +40,7 @@ export function refreshMountDirs() {
 export function restartEngine() {
   return apiClient.post('/config/restart')
 }
+
+export function resetPositionState() {
+  return apiClient.post('/config/reset_position_state')
+}

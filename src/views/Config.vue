@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div class="page-header">
-      <img src="/logo.png" alt="Logo" class="logo" height="64" width="64"/>
+      <img src="/img/logo.png" alt="Logo" class="logo" height="64" width="64"/>
       <h1>数据库配置</h1>
     </div>
     

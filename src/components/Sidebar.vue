@@ -2,7 +2,7 @@
   <div class="sidebar" :class="{ 'sidebar-collapsed': collapsed }">
     <div class="logo-container">
       <div class="logo-text-wrapper">
-        <img src="/logo.png" alt="Logo" class="logo" height="32" width="32" />
+        <img src="/img/logo.png" alt="Logo" class="logo" height="32" width="32" />
         <h1 v-show="!collapsed">量韭</h1>
       </div>
     </div>
@@ -67,6 +67,7 @@
         </template>
         <el-menu-item index="/strategy/strategy">策略管理</el-menu-item>
         <el-menu-item index="/strategy/signal">策略信号</el-menu-item>
+        <el-menu-item index="/strategy/backtest">策略回测</el-menu-item>
         <!-- <el-menu-item index="/strategy/risk">策略风险信息</el-menu-item> -->
       </el-sub-menu>
       
@@ -195,6 +196,7 @@ const toggleSidebar = () => {
 .sidebar-menu {
   flex: 1;
   border-right: none;
+  overflow-y: auto;
 }
 
 .sidebar-menu:not(.el-menu--collapse) {

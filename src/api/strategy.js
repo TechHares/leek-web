@@ -20,6 +20,11 @@ export function updateStrategy(id, data) {
   return apiClient.put(`/strategies/${id}`, data)
 }
 
+// 更新策略状态
+export function updateStrategyState(id, data) {
+  return apiClient.put(`/strategies/${id}/state`, data)
+}
+
 // 删除策略
 export function deleteStrategy(id) {
   return apiClient.delete(`/strategies/${id}`)

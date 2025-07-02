@@ -103,6 +103,24 @@ const routes = [
         component: () => import('@/views/strategy/Signal.vue'),
         meta: { title: '策略信号' }
       },
+      {
+        path: 'strategy/backtest',
+        name: 'BacktestRecords',
+        component: () => import('@/views/strategy/BacktestRecords.vue'),
+        meta: { title: '策略回测' }
+      },
+      {
+        path: 'strategy/backtest/create',
+        name: 'BacktestCreate',
+        component: () => import('@/views/strategy/Backtest.vue'),
+        meta: { title: '新建回测' }
+      },
+      {
+        path: 'strategy/backtest/:id',
+        name: 'BacktestDetail',
+        component: () => import('@/views/strategy/Backtest.vue'),
+        meta: { title: '回测详情' }
+      },
       
     ]
   },

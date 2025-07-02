@@ -75,6 +75,6 @@ export function formatFileSize(bytes) {
  */
 export function formatTag(tag) {
   if (!tag) return '';
-  if (tag.length <= 12) return tag;
-  return '...' + tag.slice(-9);
+  if (tag.length <= 22) return tag;
+  return '... ' + tag.slice(-18);
 } 
