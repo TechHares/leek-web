@@ -627,7 +627,7 @@ import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrat
   getExitStrategyTemplates,
   getStrategyPolicyTemplates,
   getStrategyFabricatorTemplates } from '@/api/strategy'
-import { getDataSources, getDataSourceTemplates, fetchDataSourceParameters } from '@/api/dataSource'
+import { getDataSources, getDataSourceTemplates, fetchDataSourceParameters } from '@/api/datasource'
 import { getRiskPolicies } from '@/api/risk'
 import Pagination from '@/components/Pagination/index.vue'
 import StrategyDataViewer from '@/components/StrategyDataViewer.vue'
