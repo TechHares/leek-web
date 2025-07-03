@@ -619,26 +619,22 @@
 </template>
 
 <script>
-import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy, updateStrategyState } from '@/api/strategy'
-import { getDataSources } from '@/api/dataSource'
-import { getEnterStrategies, getExitStrategies } from '@/api/strategy'
+import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy, updateStrategyState,
+  getEnterStrategies, 
+  getExitStrategies,
+  getStrategyTemplates,
+  getEnterStrategyTemplates,
+  getExitStrategyTemplates,
+  getStrategyPolicyTemplates,
+  getStrategyFabricatorTemplates } from '@/api/strategy'
+import { getDataSources, getDataSourceTemplates, fetchDataSourceParameters } from '@/api/dataSource'
 import { getRiskPolicies } from '@/api/risk'
 import Pagination from '@/components/Pagination/index.vue'
 import StrategyDataViewer from '@/components/StrategyDataViewer.vue'
 import { Plus, Edit, Delete, VideoPlay, RemoveFilled, RefreshLeft, DataAnalysis, RefreshRight } from '@element-plus/icons-vue'
-import { formatDate } from '@/utils/format'
-import { formatTag } from '@/utils/format'
-import {
-  getStrategyTemplates,
-  getEnterStrategyTemplates,
-  getExitStrategyTemplates,
-  getStrategyFabricatorTemplates
-} from '@/api/strategy'
+import { formatDate,formatTag } from '@/utils/format'
 import { getExecutors } from '@/api/executor'
 import DynamicForm from '@/components/DynamicForm.vue'
-import { getStrategyPolicyTemplates } from '@/api/strategy'
-import { getDataSourceTemplates } from '@/api/dataSource'
-import { fetchDataSourceParameters } from '@/api/dataSource'
 
 export default {
   name: 'Strategy',
