@@ -62,18 +62,37 @@
           </tbody>
         </table>
       </el-card>
+      <el-card class="card latest-info-card">
+        <div class="card-title">最新信息</div>
+        <div class="latest-info-content">
+          <div class="info-row">
+            <span class="info-label">版本号：</span>
+            <span class="info-value">{{ latestVersion }}</span>
+          </div>
+          <div class="info-row version-description">
+            <span class="info-label">更新内容：</span>
+            <div class="description-content">
+              <div v-for="(item, index) in versionDescriptionList" :key="index" class="description-item">
+                {{ item }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
+import { ref, onMounted, onUnmounted, onActivated, onDeactivated, computed } from 'vue'
 import { getDashboardOverview } from '@/api/dashboard'
 
 const state = ref({})
 const barList = ref([])
 const coreVersion = ref('')
 const sysVersion = ref('')
+const latestVersion = ref('')
+const versionDescription = ref('')
 
 let timer = null
 
@@ -90,6 +109,8 @@ const fetchData = async () => {
     state.value = res.data.state
     coreVersion.value = res.data.core_version
     sysVersion.value = res.data.sys_version
+    latestVersion.value = res.data.version || ''
+    versionDescription.value = res.data.body || ''
     const { cpu, memory, disk } = resources
     barList.value = [
       {
@@ -115,6 +136,12 @@ const fetchData = async () => {
     console.error('Failed to fetch dashboard data:', error)
   }
 }
+
+// 计算属性：将版本描述按行分割
+const versionDescriptionList = computed(() => {
+  if (!versionDescription.value) return []
+  return versionDescription.value.split('\r\n').filter(item => item.trim())
+})
 
 // 关键：keep-alive 场景下的激活/失活
 onActivated(() => {
@@ -151,6 +178,10 @@ onDeactivated(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+.latest-info-card {
+  min-width: 420px;
+  min-height: 300px;
 }
 .multi-bar-row {
   display: flex;
@@ -216,5 +247,70 @@ onDeactivated(() => {
   font-weight: bold;
   padding: 4px 2px;
   min-width: 80px;
+}
+.latest-info-content {
+  padding: 16px 0;
+}
+.info-row {
+  display: flex;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.info-row:last-child {
+  margin-bottom: 0;
+}
+.info-label {
+  min-width: 90px;
+  font-size: 16px;
+  color: #555;
+  font-weight: 500;
+  text-align: right;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+.info-value {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+  flex: 1;
+}
+.info-value a {
+  color: #409eff;
+  text-decoration: none;
+}
+.info-value a:hover {
+  text-decoration: underline;
+}
+.version-description {
+  align-items: flex-start;
+}
+.description-content {
+  flex: 1;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+}
+.description-item {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  padding-left: 0;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+}
+.description-item:before {
+  content: "•";
+  color: #409eff;
+  font-weight: bold;
+  margin-right: 8px;
+  position: static;
+}
+.description-item:last-child {
+  margin-bottom: 0;
 }
 </style> 
