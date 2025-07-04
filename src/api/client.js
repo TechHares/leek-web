@@ -11,7 +11,7 @@ const apiClient = axios.create({
 const PROJECT_ID_WHITELIST = [
   '/authorization',
   '/auth',
-  '/systerm',
+  '/system',
   '/projects'
 ]
 
@@ -31,7 +31,7 @@ apiClient.interceptors.request.use(
     const projectId = localStorage.getItem('current_project_id')
     // 检查是否需要 project_id
     if (!projectId && !isWhitelisted(config.url)) {
-      ElMessage.error('请选择项目')
+      ElMessage.error('请选择项目：' + config.url)
       // 直接拒绝请求
       return Promise.reject(new Error('未选择项目'))
     }
