@@ -128,6 +128,10 @@ const routes = [
   {
     path: '/home',
     redirect: '/'
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ]
 
@@ -139,6 +143,12 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   // 如果目标路径已经是配置页面，不需要检查配置
   if (to.path === '/config') {
+    next()
+    return
+  }
+  
+  // 如果目标路径是登录页面，直接允许访问
+  if (to.path === '/login') {
     next()
     return
   }

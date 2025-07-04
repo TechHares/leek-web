@@ -1,8 +1,8 @@
 // 调试日志函数
 export const logDebug = (label, data) => {
-  console.log(`==== DEBUG: ${label} ====`);
-  console.log(JSON.stringify(data, null, 2));
-  console.log('================');
+  // console.log(`==== DEBUG: ${label} ====`);
+  // console.log(JSON.stringify(data, null, 2));
+  // console.log('================');
   return data; // 便于链式调用
 };
 

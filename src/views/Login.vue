@@ -58,6 +58,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/auth'
+import { getConfig } from '@/api/config'
 
 const router = useRouter()
 const route = useRoute()
@@ -78,6 +79,14 @@ const rules = {
     { required: true, message: '请输入密码', trigger: 'blur' }
   ]
 }
+
+onMounted(async () => {
+  // 如果用户已经登录，直接跳转到首页或重定向页面
+  const config = await getConfig()
+  if (!config.is_configured) {
+    router.push('/config')
+  }
+})
 
 const onFocus = (field) => {
   focusedElement.value = field
