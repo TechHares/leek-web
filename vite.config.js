@@ -41,7 +41,7 @@ export default defineConfig({
         manualChunks: () => 'everything.js'
       }
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 10000,
     minify: 'terser',
     terserOptions: {
       compress: {
