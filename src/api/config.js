@@ -38,7 +38,9 @@ export function refreshMountDirs() {
 }
 
 export function restartEngine() {
-  return apiClient.post('/config/restart')
+  return apiClient.post('/config/restart', null, {
+    timeout: 120000 // 30秒超时，适合重启引擎这种耗时操作
+  })
 }
 
 export function resetPositionState() {
