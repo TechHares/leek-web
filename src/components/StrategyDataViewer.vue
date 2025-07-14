@@ -6,6 +6,11 @@
     @close="handleClose"
     class="strategy-data-viewer"
   >
+    <template #header>
+      <span>策略数据</span>
+      <el-button size="small" type="warning" style="margin-left: 16px;" @click="clearData">清空数据</el-button>
+      <el-button size="small" type="primary" style="margin-left: 8px;" @click="restartStrategy">重启策略</el-button>
+    </template>
     <div v-if="!strategyData || Object.keys(strategyData).length === 0" class="empty-state">
       <el-empty description="暂无数据" />
     </div>
@@ -135,7 +140,7 @@
 <script>
 import { formatNumber } from '@/utils/format'
 import { sideZh, getPositionSideTag, insTypeDesc } from '@/utils/enum'
-import { getStrategy, updateStrategyState } from '@/api/strategy'
+import { getStrategy, updateStrategyState, restartStrategy as restartStrategyAPI } from '@/api/strategy'
 import { closePosition } from '@/api/position'
 
 export default {
@@ -263,6 +268,30 @@ export default {
       await updateStrategyState(this.strategyId, this.strategyData.data)
       this.editingStrategyStateKey = null
       this.editingStrategyStateValue = ''
+    },
+    async clearData() {
+      try {
+        await this.$confirm('确认清除该策略的运行时数据?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await updateStrategyState(this.strategyId, {})
+        this.$message.success('运行时数据已清除')
+        this.fetchStrategy()
+      } catch (error) {
+        if (error !== 'cancel') {
+          this.$message.error('清除运行时数据失败')
+        }
+      }
+    },
+    async restartStrategy() {
+      try {
+        await restartStrategyAPI(this.strategyId)
+        this.$message.success('重启策略成功')
+      } catch (error) {
+        this.$message.error('重启策略失败')
+      }
     }
   }
 }

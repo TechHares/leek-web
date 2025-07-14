@@ -107,14 +107,14 @@
                 </el-button>
               </el-tooltip>
               
-              <el-tooltip v-if="scope.row.is_enabled" content="清除运行时数据" placement="top">
+              <el-tooltip v-if="scope.row.is_enabled" content="重启" placement="top">
                 <el-button
                   size="small"
                   type="info"
-                  @click="handleClearRuntimeData(scope.row)"
+                  @click="restartStrategy(scope.row.id)"
                   circle
                 >
-                <el-icon><Discount /></el-icon>
+                <el-icon><Refresh /></el-icon>
                 </el-button>
               </el-tooltip>
               
@@ -619,7 +619,7 @@
 </template>
 
 <script>
-import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy, updateStrategyState,
+import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy, updateStrategyState, restartStrategy as restartStrategyAPI,
   getEnterStrategies, 
   getExitStrategies,
   getStrategyTemplates,
@@ -794,6 +794,14 @@ export default {
   methods: {
     formatDate,
     formatTag,
+    async restartStrategy(id) {
+      try {
+        await restartStrategy(id)
+        this.$message.success('重启策略成功')
+      } catch (error) {
+        this.$message.error('重启策略失败')
+      }
+    },
     getStrategyName(className) {
       const tpl = this.rawStrategyTemplates?.find(item => item.cls === className)
       return tpl ? tpl.name : className
@@ -1270,22 +1278,6 @@ export default {
     async handleViewData(row) {
       this.currentStrategyData = row
       this.dataDialogVisible = true
-    },
-    async handleClearRuntimeData(row) {
-      try {
-        await this.$confirm('确认清除该策略的运行时数据?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await updateStrategyState(row.id, {})
-        this.$message.success('运行时数据已清除')
-        this.getList()
-      } catch (error) {
-        if (error !== 'cancel') {
-          this.$message.error('清除运行时数据失败')
-        }
-      }
     }
   }
 }
