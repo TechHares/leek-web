@@ -16,19 +16,14 @@
     </div>
     <div v-else>
       <div class="instance-selector" v-if="strategyInstanceIds.length > 1">
-        <el-select
-          v-model="selectedInstanceId"
-          placeholder="选择实例"
-          class="instance-select"
-          @change="handleInstanceChange"
-        >
-          <el-option
+        <el-tabs v-model="selectedInstanceId" @tab-change="handleInstanceChange" class="instance-tabs">
+          <el-tab-pane
             v-for="instanceId in strategyInstanceIds"
             :key="instanceId"
             :label="instanceId"
-            :value="instanceId"
+            :name="instanceId"
           />
-        </el-select>
+        </el-tabs>
       </div>
     <el-descriptions v-if="currentInstanceData" :column="4" border>
         <el-descriptions-item label="状态">
@@ -203,11 +198,20 @@ export default {
       try {
         const res = await getStrategy(this.strategyId)
         this.strategyData = res.data
-        // 自动切换到第一个实例
-        if (this.strategyInstanceIds.length > 0) {
+        
+        // 保存当前选中的实例ID
+        const currentSelectedId = this.selectedInstanceId
+        
+        // 如果当前选中的实例ID仍然存在，保持选中状态
+        if (currentSelectedId && this.strategyInstanceIds.includes(currentSelectedId)) {
+          this.selectedInstanceId = currentSelectedId
+        } else if (this.strategyInstanceIds.length > 0) {
+          // 如果当前选中的实例ID不存在，切换到第一个实例
           this.selectedInstanceId = this.strategyInstanceIds[0]
-          this.handleInstanceChange()
         }
+        
+        // 更新当前实例数据
+        this.handleInstanceChange()
       } catch (e) {
         this.strategyData = null
       }
@@ -313,8 +317,20 @@ export default {
   padding: 20px 24px;
   border-bottom: 1px solid #ebeef5;
   
-  .instance-select {
-    width: 40%;
+  .instance-tabs {
+    :deep(.el-tabs__header) {
+      margin-bottom: 0;
+    }
+    
+    :deep(.el-tabs__nav-wrap) {
+      padding: 0;
+    }
+    
+    :deep(.el-tabs__item) {
+      padding: 0 20px;
+      height: 32px;
+      line-height: 32px;
+    }
   }
 }
 
