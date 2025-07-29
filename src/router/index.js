@@ -32,6 +32,12 @@ const routes = [
         meta: { requiresAuth: true, title: '概览' }
       },
       {
+        path: 'dashboard/assets',
+        name: 'DashboardAssets',
+        component: () => import('@/views/dashboard/Assets.vue'),
+        meta: { requiresAuth: true, title: '资产' }
+      },
+      {
         path: 'authorization/user',
         name: 'UserManagement',
         component: () => import('@/views/auth/UserManagement.vue'),
