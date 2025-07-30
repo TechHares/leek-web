@@ -314,15 +314,15 @@ const updateAssetChartData = () => {
           type: 'value',
           name: '费盈比 (‰)',
           nameTextStyle: {
-            color: '#f56c6c'
+            color: '#FFD700'
           },
           axisLabel: {
-            color: '#f56c6c',
+            color: '#FFD700',
             formatter: '{value}‰'
           },
           axisLine: {
             lineStyle: {
-              color: '#f56c6c'
+              color: '#FFD700'
             }
           }
         }
@@ -361,10 +361,10 @@ const updateAssetChartData = () => {
           type: 'line',
           yAxisIndex: 1,
           itemStyle: {
-            color: '#f56c6c'
+            color: '#FFD700'
           },
           lineStyle: {
-            color: '#f56c6c'
+            color: '#FFD700'
           },
           data: feePnlRatioData
         }

@@ -52,7 +52,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // 清除 token 并跳转到登录页
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      const currentPath = window.location.pathname + window.location.search
+      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
     } else if (error.response?.status === 451) {
       // 系统未配置，跳转到配置页面
       window.location.href = '/config'

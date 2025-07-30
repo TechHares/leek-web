@@ -257,7 +257,8 @@ const toggleSidebar = () => {
 // 退出登录
 const logout = () => {
   authLogout()
-  router.push('/login')
+  const currentPath = router.currentRoute.value.fullPath
+  router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
 }
 
 // 打开个人信息对话框
@@ -322,7 +323,8 @@ const checkAuthentication = async () => {
   // 如果没有token，直接跳转到登录页面
   const token = getToken()
   if (!token) {
-    router.push('/login')
+    const currentPath = router.currentRoute.value.fullPath
+    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
     return
   }
   
@@ -348,7 +350,8 @@ const checkAuthentication = async () => {
     const userData = await checkAuth()
     if (!userData) {
       // 认证失败，跳转到登录页面
-      router.push('/login')
+      const currentPath = router.currentRoute.value.fullPath
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
       return
     }
     
@@ -365,7 +368,8 @@ const checkAuthentication = async () => {
   } catch (error) {
     console.error('认证检查失败:', error)
     // 认证失败，跳转到登录页面
-    router.push('/login')
+    const currentPath = router.currentRoute.value.fullPath
+    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
   }
 }
 

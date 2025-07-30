@@ -796,7 +796,7 @@ export default {
     formatTag,
     async restartStrategy(id) {
       try {
-        await restartStrategy(id)
+        await restartStrategyAPI(id)
         this.$message.success('重启策略成功')
       } catch (error) {
         this.$message.error('重启策略失败')

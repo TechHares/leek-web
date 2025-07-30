@@ -174,7 +174,10 @@ router.beforeEach(async (to, from, next) => {
     try {
       const user = await checkAuth()
       if (!user) {
-        next('/login')
+        next({
+          path: '/login',
+          query: { redirect: to.fullPath }
+        })
         return
       }
       

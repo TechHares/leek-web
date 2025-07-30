@@ -91,7 +91,7 @@
             <div v-if="currentInstanceData.strategy_state && Object.keys(currentInstanceData.strategy_state).length > 0">
                 <el-descriptions :column="1" border size="small">
                     <el-descriptions-item 
-                        v-for="(value, key) in currentInstanceData.strategy_state" 
+                        v-for="(value, key) in getDisplayableStrategyState()" 
                         :key="key" 
                         :label="key">
                         <template #label>
@@ -288,6 +288,19 @@ export default {
           this.$message.error('清除运行时数据失败')
         }
       }
+    },
+    getDisplayableStrategyState() {
+      if (!this.currentInstanceData || !this.currentInstanceData.strategy_state) {
+        return {}
+      }
+      // 过滤掉 field_extra 字段，不展示给用户
+      const displayableState = {}
+      for (const [key, value] of Object.entries(this.currentInstanceData.strategy_state)) {
+        if (key !== 'field_extra') {
+          displayableState[key] = value
+        }
+      }
+      return displayableState
     },
     async restartStrategy() {
       try {

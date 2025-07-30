@@ -21,7 +21,8 @@ axios.interceptors.response.use(
       const { status, data } = response
       if (status === 401) {
         ElMessage.error('会话已过期，请重新登录')
-        router.push('/login')
+        const currentPath = window.location.pathname + window.location.search
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
       } else if (status === 403) {
         ElMessage.error('没有权限执行此操作')
       } else if (status === 451) {
