@@ -1,5 +1,69 @@
 <template>
   <div class="position-setting-page">
+    <!-- 仓位数据Dashboard -->
+    <el-card class="mb-4" v-if="positionData">
+      <template #header>
+        <div class="header-bar">
+          <span>仓位状态</span>
+          <el-button type="warning" @click="resetPositionState" :loading="resettingPositionState">重置仓位状态</el-button>
+        </div>
+      </template>
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">总资产</div>
+            <div class="dashboard-value">{{ formatAmount(positionData.total_amount) }}</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">可用余额</div>
+            <div class="dashboard-value">{{ formatAmount(positionData.activate_amount) }}</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">盈亏</div>
+            <div class="dashboard-value" :class="{ 'text-success': parseFloat(positionData.pnl) > 0, 'text-danger': parseFloat(positionData.pnl) < 0 }">
+              {{ formatAmount(positionData.pnl) }}
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">手续费</div>
+            <div class="dashboard-value">{{ formatAmount(positionData.fee) }}</div>
+          </div>
+        </el-col>
+      </el-row>
+      <el-row :gutter="20" class="mt-3">
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">摩擦成本</div>
+            <div class="dashboard-value">{{ formatAmount(positionData.friction) }}</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">虚拟盈亏</div>
+            <div class="dashboard-value">{{ formatAmount(positionData.virtual_pnl) }}</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">持仓数量</div>
+            <div class="dashboard-value">{{ positionData.positions ? positionData.positions.length : 0 }}</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="dashboard-item">
+            <div class="dashboard-label">持仓资产数量</div>
+            <div class="dashboard-value">{{ positionData.asset_count || 0 }}</div>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
     <el-card>
       <template #header>
         <div class="header-bar">
@@ -144,8 +208,9 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPositionSetting, updatePositionSetting, getPolicyTemplates } from '@/api/position'
+import { resetPositionState as resetPositionStateApi } from '@/api/config'
 import DynamicForm from '@/components/DynamicForm.vue'
 import { formatTag } from '@/utils/format'
 import { QuestionFilled } from '@element-plus/icons-vue'
@@ -165,10 +230,12 @@ const form = ref({
   trade_type: 4, // FUTURES
 })
 const saving = ref(false)
+const resettingPositionState = ref(false)
 const formRef = ref(null)
 const policyTemplates = ref([])
 const riskPoliciesSetting = ref([]) // setting数据
 const selectedPolicyIdx = ref(0)
+const positionData = ref(null)
 
 const getPolicySetting = (name) => riskPoliciesSetting.value.find(p => p.name === name) || {}
 
@@ -227,6 +294,8 @@ const loadSetting = async () => {
         form.value[key] = data[key]
       }
     })
+    // 加载positiondata
+    positionData.value = data.positiondata || null
     // 确保每个策略都有 class_name
     riskPoliciesSetting.value = (data.risk_policies || []).map(policy => {
       if (!policy.class_name) {
@@ -240,6 +309,14 @@ const loadSetting = async () => {
   } catch (e) {
     ElMessage.error('加载仓位设置失败')
   }
+}
+
+// 格式化金额显示
+const formatAmount = (amount) => {
+  if (!amount) return '0.00'
+  const num = parseFloat(amount)
+  if (isNaN(num)) return '0.00'
+  return num.toFixed(2)
 }
 
 const saveSetting = async () => {
@@ -265,6 +342,26 @@ const saveSetting = async () => {
     ElMessage.error('保存失败')
   }
   saving.value = false
+}
+
+const resetPositionState = async () => {
+  try {
+    await ElMessageBox.confirm('确认重置仓位状态? 该操作会清除所有策略的仓位信息，请谨慎操作!', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    resettingPositionState.value = true
+    await resetPositionStateApi()
+    ElMessage.success('仓位状态重置成功！')
+    await loadSetting()
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('重置仓位状态失败')
+    }
+  } finally {
+    resettingPositionState.value = false
+  }
 }
 
 onMounted(async () => {
@@ -318,5 +415,43 @@ onMounted(async () => {
   pointer-events: none;
   opacity: 0.5;
   filter: grayscale(0.5);
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mt-3 {
+  margin-top: 0.75rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+.card-content-left {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+.dashboard-item {
+  text-align: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+.dashboard-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.dashboard-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+}
+.text-success {
+  color: #28a745 !important;
+}
+.text-danger {
+  color: #dc3545 !important;
 }
 </style> 

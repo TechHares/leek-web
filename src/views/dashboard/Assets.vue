@@ -343,7 +343,17 @@ const updateAssetChartData = () => {
             data: [
               { type: 'max', name: '高点', itemStyle: { color: '#67c23a' } },
               { type: 'min', name: '低点', itemStyle: { color: '#f56c6c' } }
-            ]
+            ],
+            label: {
+              formatter: function(params) {
+                const value = parseFloat(params.value)
+                if (dataType.value === 'rate') {
+                  return value.toFixed(2) + '%'
+                } else {
+                  return value.toFixed(2) + ' USDT'
+                }
+              }
+            }
           }
         },
         {
