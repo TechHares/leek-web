@@ -132,17 +132,29 @@
 </template>
 
 <script setup>
-import { onMounted, ref, reactive, computed, onUnmounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getToken, checkAuth, logout as authLogout } from '@/api/auth'
-import { saveConfig } from '@/api/config'
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  UserFilled, 
+  Setting, 
+  DataBoard, 
+  TrendCharts, 
+  Bell, 
+  SwitchButton,
+  ArrowDown,
+  ArrowUp,
+  Close,
+  Menu as MenuIcon
+} from '@element-plus/icons-vue'
+import { checkAuth, logout as authLogout, getToken } from '@/api/auth'
+import { getConfig } from '@/api/config'
+import { safeRedirectToLogin } from '@/utils/redirect'
 import Sidebar from '@/components/Sidebar.vue'
 import Header from '@/components/Header.vue'
 import { Expand, Fold } from '@element-plus/icons-vue'
 
 const router = useRouter()
-const route = useRoute()
 const loading = ref(true)
 const currentUser = ref(null)
 const sidebarCollapsed = ref(false)
@@ -154,7 +166,7 @@ const isSmallScreen = ref(window.innerWidth < 768)
 const tabs = ref([
   { title: '首页', path: '/', closable: false }
 ])
-const activeTab = ref(route.path)
+const activeTab = ref(router.currentRoute.value.path)
 
 function getTabTitleByRoute(route) {
   // 优先用meta.title，否则用菜单名或path
@@ -180,9 +192,9 @@ function addTabIfNotExist(route) {
 }
 
 watch(
-  () => route.path,
+  () => router.currentRoute.value.path,
   (newPath) => {
-    addTabIfNotExist(route)
+    addTabIfNotExist(router.currentRoute.value)
   },
   { immediate: true }
 )
@@ -202,7 +214,7 @@ function removeTab(targetPath) {
 }
 
 function handleTabClick(tab) {
-  if (tab.props.name !== route.path) {
+  if (tab.props.name !== router.currentRoute.value.path) {
     router.push(tab.props.name)
   }
 }
@@ -238,7 +250,7 @@ const pageTitle = computed(() => {
     // 可以根据需要添加更多路径
   }
   
-  return pathTitleMap[route.path] || 'LEEK'
+  return pathTitleMap[router.currentRoute.value.path] || 'LEEK'
 })
 
 // 监听窗口大小变化
@@ -258,7 +270,7 @@ const toggleSidebar = () => {
 const logout = () => {
   authLogout()
   const currentPath = router.currentRoute.value.fullPath
-  router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+  safeRedirectToLogin(currentPath)
 }
 
 // 打开个人信息对话框
@@ -324,7 +336,13 @@ const checkAuthentication = async () => {
   const token = getToken()
   if (!token) {
     const currentPath = router.currentRoute.value.fullPath
-    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+    
+    // 避免重定向到登录页面本身
+    if (currentPath === '/login' || currentPath.startsWith('/login?')) {
+      router.push('/')
+    } else {
+      safeRedirectToLogin(currentPath)
+    }
     return
   }
   
@@ -351,7 +369,13 @@ const checkAuthentication = async () => {
     if (!userData) {
       // 认证失败，跳转到登录页面
       const currentPath = router.currentRoute.value.fullPath
-      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+      
+      // 避免重定向到登录页面本身
+      if (currentPath === '/login' || currentPath.startsWith('/login?')) {
+        router.push('/')
+      } else {
+        safeRedirectToLogin(currentPath)
+      }
       return
     }
     
@@ -369,7 +393,13 @@ const checkAuthentication = async () => {
     console.error('认证检查失败:', error)
     // 认证失败，跳转到登录页面
     const currentPath = router.currentRoute.value.fullPath
-    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+    
+    // 避免重定向到登录页面本身
+    if (currentPath === '/login' || currentPath.startsWith('/login?')) {
+      router.push('/')
+    } else {
+      safeRedirectToLogin(currentPath)
+    }
   }
 }
 

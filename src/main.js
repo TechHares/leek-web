@@ -9,6 +9,7 @@ import router from './router'
 import './styles/main.scss'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { safeRedirectToLogin } from '@/utils/redirect'
 
 // Configure axios
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || window.location.origin
@@ -22,7 +23,7 @@ axios.interceptors.response.use(
       if (status === 401) {
         ElMessage.error('会话已过期，请重新登录')
         const currentPath = window.location.pathname + window.location.search
-        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+        safeRedirectToLogin(currentPath, false)
       } else if (status === 403) {
         ElMessage.error('没有权限执行此操作')
       } else if (status === 451) {

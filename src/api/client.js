@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { getToken } from './auth'
 import { ElMessage } from 'element-plus'
+import { safeRedirectToLogin } from '@/utils/redirect'
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
@@ -53,7 +54,7 @@ apiClient.interceptors.response.use(
       // 清除 token 并跳转到登录页
       localStorage.removeItem('token')
       const currentPath = window.location.pathname + window.location.search
-      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+      safeRedirectToLogin(currentPath, true)
     } else if (error.response?.status === 451) {
       // 系统未配置，跳转到配置页面
       window.location.href = '/config'

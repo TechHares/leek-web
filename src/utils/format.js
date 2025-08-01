@@ -78,3 +78,19 @@ export function formatTag(tag) {
   if (tag.length <= 22) return tag;
   return '... ' + tag.slice(-18);
 } 
+
+/**
+ * 过滤查询参数中的空字符串，将其转换为 undefined
+ * 避免后端解析错误
+ * @param {Object} params - 查询参数对象
+ * @returns {Object} 过滤后的参数对象
+ */
+export function filterEmptyParams(params) {
+  const filtered = { ...params }
+  for (const key in filtered) {
+    if (filtered[key] === '') {
+      filtered[key] = undefined
+    }
+  }
+  return filtered
+} 

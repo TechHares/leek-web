@@ -59,6 +59,7 @@ import { ElMessage } from 'element-plus'
 import { UserFilled, Lock } from '@element-plus/icons-vue'
 import { login } from '@/api/auth'
 import { getConfig } from '@/api/config'
+import { handleLoginRedirect } from '@/utils/redirect'
 
 const router = useRouter()
 const route = useRoute()
@@ -110,7 +111,9 @@ const handleLogin = async () => {
       try {
         await login(loginForm)
         ElMessage.success('登录成功')
-        const redirect = route.query.redirect || '/'
+        
+        // 使用工具函数处理重定向
+        const redirect = handleLoginRedirect(route.query.redirect)
         router.push(redirect)
       } catch (error) {
         console.error('Login failed:', error)

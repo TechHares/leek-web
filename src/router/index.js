@@ -162,6 +162,12 @@ router.beforeEach(async (to, from, next) => {
   // 检查登录状态
   const token = getToken()
   if (to.meta.requiresAuth && !token) {
+    // 避免重定向循环：如果当前已经在登录页面，不要添加redirect参数
+    if (from.path === '/login') {
+      next('/')
+      return
+    }
+    
     next({
       path: '/login',
       query: { redirect: to.fullPath }
@@ -174,6 +180,12 @@ router.beforeEach(async (to, from, next) => {
     try {
       const user = await checkAuth()
       if (!user) {
+        // 避免重定向循环：如果当前已经在登录页面，不要添加redirect参数
+        if (from.path === '/login') {
+          next('/')
+          return
+        }
+        
         next({
           path: '/login',
           query: { redirect: to.fullPath }
@@ -192,6 +204,11 @@ router.beforeEach(async (to, from, next) => {
       to.meta.userData = user
     } catch (error) {
       console.error('Failed to check auth:', error)
+      // 避免重定向循环：如果当前已经在登录页面，不要添加redirect参数
+      if (from.path === '/login') {
+        next('/')
+        return
+      }
       next('/login')
       return
     }

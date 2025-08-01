@@ -2,7 +2,8 @@
   <el-dialog
     title="策略数据"
     v-model="dialogVisible"
-    width="1000px"
+    width="90%"
+    max-width="1200px"
     @close="handleClose"
     class="strategy-data-viewer"
   >
@@ -182,6 +183,11 @@ export default {
     if (!this.timer) {
       this.timer = setInterval(this.fetchStrategy, 8000)
     }
+    
+    // 检查Element Plus tab滚动功能
+    this.$nextTick(() => {
+      this.checkElementPlusTabs()
+    })
   },
   beforeUnmount() {
     if (this.timer) {
@@ -212,6 +218,11 @@ export default {
         
         // 更新当前实例数据
         this.handleInstanceChange()
+        
+        // 检查Element Plus tab滚动功能
+        this.$nextTick(() => {
+          this.checkElementPlusTabs()
+        })
       } catch (e) {
         this.strategyData = null
       }
@@ -309,6 +320,27 @@ export default {
       } catch (error) {
         this.$message.error('重启策略失败')
       }
+    },
+    checkElementPlusTabs() {
+      // 检查Element Plus tab组件的滚动状态
+      const tabsContainer = document.querySelector('.instance-tabs .el-tabs__nav-wrap')
+      if (tabsContainer) {
+        const navScroll = tabsContainer.querySelector('.el-tabs__nav-scroll')
+        const navPrev = tabsContainer.querySelector('.el-tabs__nav-prev')
+        const navNext = tabsContainer.querySelector('.el-tabs__nav-next')
+        
+        console.log('Element Plus Tabs Debug:', {
+          container: tabsContainer,
+          navScroll: navScroll,
+          navPrev: navPrev,
+          navNext: navNext,
+          isScrollable: tabsContainer.classList.contains('is-scrollable'),
+          prevDisabled: navPrev?.classList.contains('is-disabled'),
+          nextDisabled: navNext?.classList.contains('is-disabled'),
+          scrollWidth: navScroll?.scrollWidth,
+          clientWidth: navScroll?.clientWidth
+        })
+      }
     }
   }
 }
@@ -343,6 +375,52 @@ export default {
       padding: 0 20px;
       height: 32px;
       line-height: 32px;
+      white-space: nowrap;
+    }
+    
+    // 确保滚动按钮正常工作
+    :deep(.el-tabs__nav-prev),
+    :deep(.el-tabs__nav-next) {
+      position: absolute;
+      top: 0;
+      height: 32px;
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 1;
+      
+      &:hover {
+        background: #f5f7fa;
+      }
+      
+      &.is-disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+    
+    :deep(.el-tabs__nav-prev) {
+      left: 0;
+    }
+    
+    :deep(.el-tabs__nav-next) {
+      right: 0;
+    }
+    
+    :deep(.el-tabs__nav-wrap) {
+      position: relative;
+      padding: 0 30px; // 为左右按钮留出空间
+    }
+    
+    // 确保滚动容器正常工作
+    :deep(.el-tabs__nav-scroll) {
+      overflow-x: auto;
+      overflow-y: hidden;
     }
   }
 }

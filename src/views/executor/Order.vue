@@ -242,7 +242,7 @@
 import { getOrders, getOrder } from '@/api/executor'
 import { View } from '@element-plus/icons-vue'
 import Pagination from '@/components/Pagination/index.vue'
-import { formatNumber } from '@/utils/format'
+import { formatNumber, filterEmptyParams } from '@/utils/format'
 import { getOrderStatusType, getOrderStatusText, sideZh, insTypeZh, assetTypeZh, orderTypeText, tradeModeText, insTypeDesc, assetTypeDesc } from '@/utils/enum'
 
 export default {
@@ -273,7 +273,10 @@ export default {
     async getList() {
       this.listLoading = true
       try {
-        const { data } = await getOrders(this.listQuery)
+        // 过滤掉空字符串，避免后端解析错误
+        const queryParams = filterEmptyParams(this.listQuery)
+        
+        const { data } = await getOrders(queryParams)
         this.list = data.items
         this.total = data.total
       } catch (error) {
@@ -283,6 +286,8 @@ export default {
       this.listLoading = false
     },
     handleFilter() {
+      // 重置页码到第一页
+      this.listQuery.page = 1
       this.getList()
     },
     async handleDetail(row) {
