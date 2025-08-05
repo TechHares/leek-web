@@ -27,12 +27,12 @@
         </div>
         
         <!-- 数据切换 -->
-                  <div class="data-toggle">
-            <el-radio-group v-model="dataType" @change="handleDataTypeChange" size="small">
-              <el-radio-button value="rate">比值</el-radio-button>
-              <el-radio-button value="amount">数值</el-radio-button>
-            </el-radio-group>
-          </div>
+        <div class="data-toggle">
+          <el-radio-group v-model="dataType" @change="handleDataTypeChange" size="small">
+            <el-radio-button value="rate">比值</el-radio-button>
+            <el-radio-button value="amount">数值</el-radio-button>
+          </el-radio-group>
+        </div>
       </div>
     </div>
     
@@ -53,6 +53,121 @@
             <div ref="assetChartRef" class="chart1"></div>
           </div>
         </el-col>
+    </el-row>
+        <!-- 性能指标卡片 -->
+    <el-row :gutter="16" class="performance-metrics">
+      <el-col :span="6">
+        <div class="metric-card">
+          <el-statistic :value="formatPercentage(performanceMetrics?.annualized_return)" :value-style="{color: performanceMetrics?.annualized_return||0>0?'#67c23a':'#f56c6c'}">
+            <template #title>
+              <div style="display: inline-flex; align-items: center;color: #fff;">
+                年化收益率
+                <el-tooltip effect="light" content="年化收益率，反映投资回报的年化水平" placement="top">
+                  <el-icon style="margin-left: 4px" :size="12">
+                    <InfoFilled />
+                  </el-icon>
+                </el-tooltip>
+              </div>
+            </template>
+          </el-statistic>
+          <div class="metric-footer">
+            <div class="footer-item">
+              <span style="color: #fff;">对比上期</span>
+              <span :class="getComparisonClass(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return)">
+                {{ formatComparison(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return) }}
+                <el-icon v-if="hasComparison(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return)">
+                  <CaretTop v-if="getComparisonValue(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return) > 0" />
+                  <CaretBottom v-else-if="getComparisonValue(performanceMetrics.annualized_return, periodComparison?.previous?.annualized_return) < 0" />
+                </el-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="metric-card">
+          <el-statistic :value="formatPercentage(performanceMetrics?.max_drawdown?.max_drawdown)" :value-style="{ color: '#f56c6c' }">
+            <template #title>
+              <div style="display: inline-flex; align-items: center;color: #fff;">
+                最大回撤
+                <el-tooltip effect="light" content="最大回撤，反映投资风险的最大损失幅度" placement="top">
+                  <el-icon style="margin-left: 4px" :size="12">
+                    <InfoFilled />
+                  </el-icon>
+                </el-tooltip>
+              </div>
+            </template>
+          </el-statistic>
+          <div class="metric-footer">
+            <div class="footer-item">
+              <span style="color: #fff;">对比上期</span>
+              <span :class="getComparisonClass(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown, true)">
+                {{ formatComparison(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown, true) }}
+                <el-icon v-if="hasComparison(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown)">
+                  <CaretTop v-if="getComparisonValue(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown, true) > 0" />
+                  <CaretBottom v-else-if="getComparisonValue(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown, true) < 0" />
+                </el-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="metric-card">
+          <el-statistic :value="formatPercentage(performanceMetrics?.volatility)" :value-style="{color: '#fff'}">
+            <template #title>
+              <div style="display: inline-flex; align-items: center;color: #fff;">
+                波动率
+                <el-tooltip effect="light" content="年化波动率，反映投资组合的风险水平" placement="top">
+                  <el-icon style="margin-left: 4px" :size="12">
+                    <InfoFilled />
+                  </el-icon>
+                </el-tooltip>
+              </div>
+            </template>
+          </el-statistic>
+          <div class="metric-footer">
+            <div class="footer-item">
+              <span style="color: #fff;">对比上期</span>
+              <span :class="getComparisonClass(performanceMetrics?.volatility, periodComparison?.previous?.volatility, true)">
+                {{ formatComparison(performanceMetrics?.volatility, periodComparison?.previous?.volatility, true) }}
+                <el-icon v-if="hasComparison(performanceMetrics?.volatility, periodComparison?.previous?.volatility)">
+                  <CaretTop v-if="getComparisonValue(performanceMetrics?.volatility, periodComparison?.previous?.volatility, true) > 0" />
+                  <CaretBottom v-else-if="getComparisonValue(performanceMetrics?.volatility, periodComparison?.previous?.volatility, true) < 0" />
+                </el-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="metric-card">
+          <el-statistic :value="formatNumber(performanceMetrics?.sharpe_ratio, 2)" :value-style="{color: '#fff'}">
+            <template #title>
+              <div style="display: inline-flex; align-items: center;color: #fff;">
+                夏普比率
+                <el-tooltip effect="light" content="夏普比率，反映风险调整后的收益水平" placement="top">
+                  <el-icon style="margin-left: 4px" :size="12">
+                    <InfoFilled />
+                  </el-icon>
+                </el-tooltip>
+              </div>
+            </template>
+          </el-statistic>
+          <div class="metric-footer">
+            <div class="footer-item">
+              <span style="color: #fff;">对比上期</span>
+              <span :class="getComparisonClass(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio)">
+                {{ formatComparison(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio) }}
+                <el-icon v-if="hasComparison(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio)">
+                  <CaretTop v-if="getComparisonValue(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio) > 0" />
+                  <CaretBottom v-else-if="getComparisonValue(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio) < 0" />
+                </el-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+      </el-col>
     </el-row>
     <el-row>
         <el-col :span="12" class="chart-card main-chart">
@@ -81,6 +196,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { getDashboardAsset } from '@/api/dashboard'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { InfoFilled, CaretTop, CaretBottom } from '@element-plus/icons-vue'
 
 // 响应式数据
 const timeRange = ref('1month')
@@ -95,6 +211,8 @@ const feeChart = ref(null)
 const assetData = ref([])
 const strategyPnlData = ref([])
 const strategyFeeData = ref([])
+const performanceMetrics = ref(null)
+const periodComparison = ref(null)
 
 // 时间范围处理
 const handleTimeRangeChange = () => {
@@ -148,6 +266,8 @@ const fetchData = async (startTime, endTime) => {
       assetData.value = response.data.asset_snapshots || []
       strategyPnlData.value = response.data.strategy_pnl || []
       strategyFeeData.value = response.data.strategy_fee || []
+      performanceMetrics.value = response.data.performance_metrics || null
+      periodComparison.value = response.data.period_comparison || null
       
   }
   
@@ -281,7 +401,7 @@ const updateAssetChartData = () => {
         }
       },
               legend: {
-          data: ['收益', '费盈比'],
+          data: ['收益', '费盈比'], 
           top: 30
         },
       grid: {
@@ -582,6 +702,76 @@ const formatAmount = (amount) => {
   })
 }
 
+const formatNumber = (value, decimals = 2) => {
+  if (value === null || value === undefined) return '0.00'
+  const num = parseFloat(value)
+  return num.toFixed(decimals)
+}
+
+const formatPercentage = (value) => {
+  if (value === null || value === undefined) return '0.00%'
+  const num = parseFloat(value)
+  return (num * 100).toFixed(2) + '%'
+}
+
+const formatComparison = (current, previous, reverse = false) => {
+  if (current === null || current === undefined || previous === null || previous === undefined) {
+    return '0.00%'
+  }
+  
+  const currentNum = parseFloat(current)
+  const previousNum = parseFloat(previous)
+  
+  if (previousNum === 0) {
+    return currentNum > 0 ? '+∞' : currentNum < 0 ? '-∞' : '0.00%'
+  }
+  
+  const change = ((currentNum - previousNum) / Math.abs(previousNum)) * 100
+  
+  if (reverse) {
+    // 对于回撤和波动率，数值越小越好
+    const sign = change < 0 ? '+' : change > 0 ? '-' : ''
+    return `${sign}${Math.abs(change).toFixed(2)}%`
+  } else {
+    const sign = change > 0 ? '+' : ''
+    return `${sign}${change.toFixed(2)}%`
+  }
+}
+
+const getComparisonValue = (current, previous, reverse = false) => {
+  if (current === null || current === undefined || previous === null || previous === undefined) {
+    return 0
+  }
+  
+  const currentNum = parseFloat(current)
+  const previousNum = parseFloat(previous)
+  
+  if (previousNum === 0) {
+    return currentNum
+  }
+  
+  const change = ((currentNum - previousNum) / Math.abs(previousNum)) * 100
+  
+  if (reverse) {
+    // 对于回撤和波动率，数值越小越好
+    return -change
+  } else {
+    return change
+  }
+}
+
+const hasComparison = (current, previous) => {
+  return current !== null && current !== undefined && 
+         previous !== null && previous !== undefined
+}
+
+const getComparisonClass = (current, previous, reverse = false) => {
+  const value = getComparisonValue(current, previous, reverse)
+  if (value > 0) return 'text-success'
+  if (value < 0) return 'text-danger'
+  return ''
+}
+
 // 生命周期
 onMounted(() => {
   
@@ -623,6 +813,55 @@ const handleResize = () => {
   padding: 24px;
   background: #f5f6fa;
   min-height: 100vh;
+}
+
+/* 性能指标卡片样式 */
+.performance-metrics {
+  padding-left: 8px;
+}
+
+.metric-card {
+  height: 80px;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #100c2a;
+  border: 1px solidrgb(233, 239, 239);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.metric-footer .footer-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.metric-footer .footer-item span:last-child {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+.text-success {
+  color: #67c23a;
+}
+
+.text-danger {
+  color: #f56c6c;
 }
 
 .header {
