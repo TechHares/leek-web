@@ -23,7 +23,7 @@
           <span>仪表盘</span>
         </template>
         <el-menu-item index="/dashboard/assets">收益</el-menu-item>
-        <el-menu-item index="/dashboard/strategy">策略</el-menu-item>
+        <el-menu-item index="/dashboard/performance">策略性能</el-menu-item>
       </el-sub-menu>
             
       <!-- 资产 -->

@@ -38,6 +38,12 @@ const routes = [
         meta: { requiresAuth: true, title: '资产' }
       },
       {
+        path: 'dashboard/performance',
+        name: 'DashboardPerformance',
+        component: () => import('@/views/dashboard/Performance.vue'),
+        meta: { requiresAuth: true, title: '性能分析' }
+      },
+      {
         path: 'authorization/user',
         name: 'UserManagement',
         component: () => import('@/views/auth/UserManagement.vue'),

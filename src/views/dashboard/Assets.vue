@@ -58,9 +58,16 @@
     <el-row :gutter="16" class="performance-metrics">
       <el-col :span="6">
         <div class="metric-card">
-          <el-statistic :value="formatPercentage(performanceMetrics?.annualized_return)" :value-style="{color: performanceMetrics?.annualized_return||0>0?'#67c23a':'#f56c6c'}">
+          <el-statistic 
+            :value="(performanceMetrics?.annualized_return || 0) * 100" 
+            :precision="2" 
+            suffix="%" 
+            :value-style="{
+              color: (performanceMetrics?.annualized_return||0)>0?'#67c23a':'#f56c6c',
+              '--el-statistic-content-color': (performanceMetrics?.annualized_return||0)>0?'#67c23a':'#f56c6c'
+            }">
             <template #title>
-              <div style="display: inline-flex; align-items: center;color: #fff;">
+              <div style="display: inline-flex; align-items: center;color: #606266;">
                 年化收益率
                 <el-tooltip effect="light" content="年化收益率，反映投资回报的年化水平" placement="top">
                   <el-icon style="margin-left: 4px" :size="12">
@@ -72,7 +79,7 @@
           </el-statistic>
           <div class="metric-footer">
             <div class="footer-item">
-              <span style="color: #fff;">对比上期</span>
+              <span style="color: #909399;">对比上期</span>
               <span :class="getComparisonClass(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return)">
                 {{ formatComparison(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return) }}
                 <el-icon v-if="hasComparison(performanceMetrics?.annualized_return, periodComparison?.previous?.annualized_return)">
@@ -86,9 +93,15 @@
       </el-col>
       <el-col :span="6">
         <div class="metric-card">
-          <el-statistic :value="formatPercentage(performanceMetrics?.max_drawdown?.max_drawdown)" :value-style="{ color: '#f56c6c' }">
+          <el-statistic 
+            :value="(performanceMetrics?.max_drawdown?.max_drawdown || 0) * 100" 
+            :precision="2" 
+            suffix="%" 
+            :value-style="{ 
+              color: '#f56c6c',
+            }">
             <template #title>
-              <div style="display: inline-flex; align-items: center;color: #fff;">
+              <div style="display: inline-flex; align-items: center;color: #606266;">
                 最大回撤
                 <el-tooltip effect="light" content="最大回撤，反映投资风险的最大损失幅度" placement="top">
                   <el-icon style="margin-left: 4px" :size="12">
@@ -100,7 +113,7 @@
           </el-statistic>
           <div class="metric-footer">
             <div class="footer-item">
-              <span style="color: #fff;">对比上期</span>
+              <span style="color: #909399;">对比上期</span>
               <span :class="getComparisonClass(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown, true)">
                 {{ formatComparison(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown, true) }}
                 <el-icon v-if="hasComparison(performanceMetrics?.max_drawdown?.max_drawdown, periodComparison?.previous?.max_drawdown?.max_drawdown)">
@@ -114,9 +127,12 @@
       </el-col>
       <el-col :span="6">
         <div class="metric-card">
-          <el-statistic :value="formatPercentage(performanceMetrics?.volatility)" :value-style="{color: '#fff'}">
+          <el-statistic 
+            :value="(performanceMetrics?.volatility || 0) * 100" 
+            :precision="2" 
+            suffix="%">
             <template #title>
-              <div style="display: inline-flex; align-items: center;color: #fff;">
+              <div style="display: inline-flex; align-items: center;color: #606266;">
                 波动率
                 <el-tooltip effect="light" content="年化波动率，反映投资组合的风险水平" placement="top">
                   <el-icon style="margin-left: 4px" :size="12">
@@ -128,7 +144,7 @@
           </el-statistic>
           <div class="metric-footer">
             <div class="footer-item">
-              <span style="color: #fff;">对比上期</span>
+              <span style="color: #909399;">对比上期</span>
               <span :class="getComparisonClass(performanceMetrics?.volatility, periodComparison?.previous?.volatility, true)">
                 {{ formatComparison(performanceMetrics?.volatility, periodComparison?.previous?.volatility, true) }}
                 <el-icon v-if="hasComparison(performanceMetrics?.volatility, periodComparison?.previous?.volatility)">
@@ -142,9 +158,9 @@
       </el-col>
       <el-col :span="6">
         <div class="metric-card">
-          <el-statistic :value="formatNumber(performanceMetrics?.sharpe_ratio, 2)" :value-style="{color: '#fff'}">
+          <el-statistic :value="performanceMetrics?.sharpe_ratio || 0" :precision="2" :value-style="{color: '#303133'}">
             <template #title>
-              <div style="display: inline-flex; align-items: center;color: #fff;">
+              <div style="display: inline-flex; align-items: center;color: #606266;">
                 夏普比率
                 <el-tooltip effect="light" content="夏普比率，反映风险调整后的收益水平" placement="top">
                   <el-icon style="margin-left: 4px" :size="12">
@@ -156,7 +172,7 @@
           </el-statistic>
           <div class="metric-footer">
             <div class="footer-item">
-              <span style="color: #fff;">对比上期</span>
+              <span style="color: #909399;">对比上期</span>
               <span :class="getComparisonClass(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio)">
                 {{ formatComparison(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio) }}
                 <el-icon v-if="hasComparison(performanceMetrics?.sharpe_ratio, periodComparison?.previous?.sharpe_ratio)">
@@ -295,7 +311,7 @@ const initChart = (chartRef, chartInstance, updateFunction) => {
     
     nextTick(() => {
       try {
-        chartInstance.value = echarts.init(chartRef.value, 'dark')
+        chartInstance.value = echarts.init(chartRef.value)
         updateFunction()
       } catch (error) {
         console.error('Error initializing chart:', error)
@@ -396,14 +412,13 @@ const updateAssetChartData = () => {
         show: true,
         feature: {
           dataZoom: {
-            yAxisIndex: 'none'
-        },
+            yAxisIndex: false,
+            xAxisIndex: 0
+          },
+          restore: {},
+          saveAsImage: {}
         }
       },
-              legend: {
-          data: ['收益', '费盈比'], 
-          top: 30
-        },
       grid: {
         left: '3%',
         right: '4%',
@@ -412,12 +427,14 @@ const updateAssetChartData = () => {
         containLabel: true
       },
       xAxis: {
+        id: 'xAxis0',
         type: 'category',
         boundaryGap: false,
         data: xAxisData
       },
       yAxis: [
         {
+          id: 'yAxis0',
           type: 'value',
           name: dataType.value === 'rate' ? '收益率 (%)' : '收益 (USDT)',
           nameTextStyle: {
@@ -433,6 +450,7 @@ const updateAssetChartData = () => {
           }
         },
         {
+          id: 'yAxis1',
           type: 'value',
           name: '费盈比 (‰)',
           nameTextStyle: {
@@ -453,7 +471,10 @@ const updateAssetChartData = () => {
         {
           name: '收益',
           type: 'line',
+          xAxisIndex: 0,
           yAxisIndex: 0,
+          showSymbol: false,
+          smooth: true,
           itemStyle: {
             color: '#67c23a'
           },
@@ -481,7 +502,10 @@ const updateAssetChartData = () => {
         {
           name: '费盈比',
           type: 'line',
+          xAxisIndex: 0,
           yAxisIndex: 1,
+          showSymbol: false,
+          smooth: true,
           itemStyle: {
             color: '#FFD700'
           },
@@ -575,6 +599,7 @@ const updatePnlChartData = () => {
         containLabel: true
       },
       xAxis: {
+        id: 'xAxis0',
         type: 'category',
         data: xAxisData,
         axisLabel: {
@@ -582,16 +607,19 @@ const updatePnlChartData = () => {
         }
       },
       yAxis: {
+        id: 'yAxis0',
         type: 'value',
         name: yAxisName,
         nameTextStyle: {
-          color: '#fff'
+          color: '#303133'
         }
       },
       series: [
         {
           name: seriesName,
           type: 'bar',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
           data: seriesData,
           itemStyle: {
             color: function(params) {
@@ -824,12 +852,13 @@ const handleResize = () => {
   height: 80px;
   padding: 16px;
   border-radius: 4px;
-  background-color: #100c2a;
-  border: 1px solidrgb(233, 239, 239);
+  background-color: #fff;
+  border: 1px solid #e4e7ed;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .metric-footer {
