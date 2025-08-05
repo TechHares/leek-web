@@ -98,6 +98,12 @@ const routes = [
         meta: { title: '仓位设置' }
       },
       {
+        path: 'asset/transaction',
+        name: 'Transaction',
+        component: () => import('@/views/asset/Transaction.vue'),
+        meta: { title: '流水' }
+      },
+      {
         path: 'strategy/strategy',
         name: 'Strategy',
         component: () => import('@/views/strategy/Strategy.vue'),

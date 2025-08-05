@@ -30,6 +30,11 @@ export function restartStrategy(id) {
   return apiClient.put(`/strategies/${id}/restart`)
 }
 
+// 删除策略实例
+export function deleteStrategyInstance(strategyId, instanceId) {
+  return apiClient.delete(`/strategies/${strategyId}/instance/${instanceId}`)
+}
+
 // 删除策略
 export function deleteStrategy(id) {
   return apiClient.delete(`/strategies/${id}`)

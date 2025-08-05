@@ -30,9 +30,10 @@
       <el-sub-menu index="asset">
         <template #title>
           <el-icon><Wallet /></el-icon>
-          <span>资产</span>
+          <span>资产管理</span>
         </template>
         <el-menu-item index="/asset/position">仓位</el-menu-item>
+        <el-menu-item index="/asset/transaction">流水</el-menu-item>
         <el-menu-item index="/asset/position_setting">仓位设置</el-menu-item>
         <!-- <el-menu-item index="/asset/risk">风控管理</el-menu-item> -->  
       </el-sub-menu>

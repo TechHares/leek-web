@@ -11,6 +11,7 @@
       <span>策略数据</span>
       <el-button size="small" type="warning" style="margin-left: 16px;" @click="clearData">清空数据</el-button>
       <el-button size="small" type="primary" style="margin-left: 8px;" @click="restartStrategy">重启策略</el-button>
+      <el-button size="small" type="danger" style="margin-left: 8px;" @click="deleteInstance" v-if="strategyInstanceIds.length > 1">删除当前实例</el-button>
     </template>
     <div v-if="!strategyData || Object.keys(strategyData).length === 0" class="empty-state">
       <el-empty description="暂无数据" />
@@ -136,7 +137,7 @@
 <script>
 import { formatNumber } from '@/utils/format'
 import { sideZh, getPositionSideTag, insTypeDesc } from '@/utils/enum'
-import { getStrategy, updateStrategyState, restartStrategy as restartStrategyAPI } from '@/api/strategy'
+import { getStrategy, updateStrategyState, restartStrategy as restartStrategyAPI, deleteStrategyInstance } from '@/api/strategy'
 import { closePosition } from '@/api/position'
 
 export default {
@@ -319,6 +320,36 @@ export default {
         this.$message.success('重启策略成功')
       } catch (error) {
         this.$message.error('重启策略失败')
+      }
+    },
+    async deleteInstance() {
+      if (!this.selectedInstanceId) {
+        this.$message.warning('请先选择一个实例')
+        return
+      }
+      
+      // 检查是否只有一个实例
+      if (this.strategyInstanceIds.length <= 1) {
+        this.$message.warning('至少需要保留一个实例')
+        return
+      }
+      
+      try {
+        await this.$confirm('确认删除当前策略实例? 此操作不可恢复。', '警告', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        
+        await deleteStrategyInstance(this.strategyId, this.selectedInstanceId)
+        this.$message.success('删除实例成功')
+        
+        // 重新获取策略数据
+        await this.fetchStrategy()
+      } catch (error) {
+        if (error !== 'cancel') {
+          this.$message.error('删除实例失败')
+        }
       }
     },
     checkElementPlusTabs() {

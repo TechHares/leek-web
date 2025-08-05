@@ -1,224 +1,5 @@
 <template>
   <div class="position-page">
-    <!-- 仓位状态卡片 -->
-    <el-card class="mb-4" v-if="positionData && positionData.total_amount !== 0" shadow="hover">
-      <template #header>
-        <div class="header-bar">
-          <span class="card-title">仓位状态</span>
-          <el-button type="warning" @click="resetPositionState" :loading="resettingPositionState">重置仓位状态</el-button>
-        </div>
-      </template>
-      <div class="statistics-container">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="formatAmount(positionData?.total_amount)">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    总资产
-                    <el-tooltip effect="dark" content="当前账户总资产金额" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>24小时变化</span>
-                  <span :class="getChangeRateClass(positionData?.total_amount_change)">
-                    {{ formatChangeRate(positionData?.total_amount_change) }}
-                    <el-icon v-if="positionData?.total_amount_change !== 0">
-                      <CaretTop v-if="positionData?.total_amount_change > 0" />
-                      <CaretBottom v-else-if="positionData?.total_amount_change < 0" />
-                    </el-icon>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="formatAmount(positionData?.pnl)" :value-style="{ color: getPnlColor(positionData?.pnl) }">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    盈亏
-                    <el-tooltip effect="dark" content="当前持仓的盈亏情况" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>24小时变化</span>
-                  <span :class="getChangeRateClass(positionData?.pnl_change)">
-                    {{ formatChangeRate(positionData?.pnl_change) }}
-                    <el-icon v-if="positionData?.pnl_change !== 0">
-                      <CaretTop v-if="positionData?.pnl_change > 0" />
-                      <CaretBottom v-else-if="positionData?.pnl_change < 0" />
-                    </el-icon>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="formatAmount(positionData?.fee)">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    手续费
-                    <el-tooltip effect="dark" content="累计产生的交易手续费" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>24小时变化</span>
-                  <span :class="getChangeRateClass(positionData?.fee_change)">
-                    {{ formatChangeRate(positionData?.fee_change) }}
-                    <el-icon v-if="positionData?.fee_change !== 0">
-                      <CaretTop v-if="positionData?.fee_change > 0" />
-                      <CaretBottom v-else-if="positionData?.fee_change < 0" />
-                    </el-icon>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="formatAmount(positionData?.friction)">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    摩擦成本
-                    <el-tooltip effect="dark" content="交易过程中的摩擦成本" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>24小时变化</span>
-                  <span :class="getChangeRateClass(positionData?.friction_change)">
-                    {{ formatChangeRate(positionData?.friction_change) }}
-                    <el-icon v-if="positionData?.friction_change !== 0">
-                      <CaretTop v-if="positionData?.friction_change > 0" />
-                      <CaretBottom v-else-if="positionData?.friction_change < 0" />
-                    </el-icon>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16" class="mt-0">
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="formatAmount(positionData?.virtual_pnl)">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    虚拟盈亏
-                    <el-tooltip effect="dark" content="模拟交易的盈亏情况" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>24小时变化</span>
-                  <span :class="getChangeRateClass(positionData?.virtual_pnl_change)">
-                    {{ formatChangeRate(positionData?.virtual_pnl_change) }}
-                    <el-icon v-if="positionData?.virtual_pnl_change !== 0">
-                      <CaretTop v-if="positionData?.virtual_pnl_change > 0" />
-                      <CaretBottom v-else-if="positionData?.virtual_pnl_change < 0" />
-                    </el-icon>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="formatAmount(positionData?.activate_amount)">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    可用余额
-                    <el-tooltip effect="dark" content="可用于交易的资金余额" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>可交易资金</span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="positionData?.position_count || 0">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    持仓数
-                    <el-tooltip effect="dark" content="当前活跃的仓位数量" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>活跃仓位</span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="statistic-card">
-              <el-statistic :value="positionData?.asset_count || 0">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    资产数量
-                    <el-tooltip effect="dark" content="当前持仓的资产种类数量" placement="top">
-                      <el-icon style="margin-left: 4px" :size="12">
-                        <InfoFilled />
-                      </el-icon>
-                    </el-tooltip>
-                  </div>
-                </template>
-              </el-statistic>
-              <div class="statistic-footer">
-                <div class="footer-item">
-                  <span>资产种类</span>
-                </div>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-    </el-card>
-
     <el-card shadow="hover">
       <template #header>
         <div class="header-bar">
@@ -468,15 +249,13 @@
 
 <script>
 import { getPositions, getPosition, closePosition } from '@/api/position'
-import { getPositionStatus } from '@/api/dashboard'
-import { resetPositionState as resetPositionStateApi } from '@/api/config'
-import { View, Close, InfoFilled, CaretTop, CaretBottom } from '@element-plus/icons-vue'
+import { View, Close } from '@element-plus/icons-vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { formatNumber, filterEmptyParams } from '@/utils/format'
 import { insTypeDesc, assetTypeDesc, sideZh, getPositionSideTag  } from '@/utils/enum'
 export default {
   name: 'Position',
-  components: { View, Close, InfoFilled, CaretTop, CaretBottom, Pagination },
+  components: { View, Close, Pagination },
   data() {
     return {
       list: null,
@@ -493,62 +272,11 @@ export default {
         is_fake: false
       },
       detailDialogVisible: false,
-      detail: {},
-      positionData: {
-        total_amount: 0,
-        activate_amount: 0,
-        pnl: 0,
-        friction: 0,
-        fee: 0,
-        virtual_pnl: 0,
-        positions: [],
-        asset_count: 0,
-        position_count: 0,
-        total_amount_change: 0,
-        activate_amount_change: 0,
-        pnl_change: 0,
-        friction_change: 0,
-        fee_change: 0,
-        virtual_pnl_change: 0
-      }, // 新增仓位状态数据
-      resettingPositionState: false, // 新增重置仓位状态按钮加载状态
-      timer: null // 定时器
+      detail: {}
     }
   },
   created() {
     this.getList()
-  },
-  mounted() {
-    // 先获取一次数据
-    this.getPositionState()
-    // 启动定时器，每15秒刷新一次
-    this.timer = setInterval(() => {
-      this.getPositionState()
-    }, 15000)
-  },
-  beforeUnmount() {
-    // 清理定时器
-    if (this.timer) {
-      clearInterval(this.timer)
-      this.timer = null
-    }
-  },
-  // 关键：keep-alive 场景下的激活/失活
-  activated() {
-    // 先获取一次数据
-    this.getPositionState()
-    // 如果定时器不存在，则启动定时器
-    if (!this.timer) {
-      this.timer = setInterval(() => {
-        this.getPositionState()
-      }, 15000)
-    }
-  },
-  deactivated() {
-    if (this.timer) {
-      clearInterval(this.timer)
-      this.timer = null
-    }
   },
   methods: {
     insTypeDesc,
@@ -604,82 +332,6 @@ export default {
         }
       }
     },
-    async getPositionState() {
-      try {
-        const { data } = await getPositionStatus()
-        if (data && data.current) {
-          // 确保positionData不为null
-          this.positionData = {
-            ...data.current,
-            // 添加变化率数据
-            total_amount_change: data.change_rates?.total_amount_change || 0,
-            activate_amount_change: data.change_rates?.activate_amount_change || 0,
-            pnl_change: data.change_rates?.pnl_change || 0,
-            friction_change: data.change_rates?.friction_change || 0,
-            fee_change: data.change_rates?.fee_change || 0,
-            virtual_pnl_change: data.change_rates?.virtual_pnl_change || 0
-          }
-        } else {
-          // 如果数据为空或null，设置total_amount为0以隐藏卡片
-          this.positionData = {
-            total_amount: 0,
-            activate_amount: 0,
-            pnl: 0,
-            friction: 0,
-            fee: 0,
-            virtual_pnl: 0,
-            positions: [],
-            asset_count: 0,
-            position_count: 0,
-            total_amount_change: 0,
-            activate_amount_change: 0,
-            pnl_change: 0,
-            friction_change: 0,
-            fee_change: 0,
-            virtual_pnl_change: 0
-          }
-        }
-      } catch (error) {
-        console.error('获取仓位状态失败:', error)
-        // 设置total_amount为0以隐藏卡片
-        this.positionData = {
-          total_amount: 0,
-          activate_amount: 0,
-          pnl: 0,
-          friction: 0,
-          fee: 0,
-          virtual_pnl: 0,
-          positions: [],
-          asset_count: 0,
-          position_count: 0,
-          total_amount_change: 0,
-          activate_amount_change: 0,
-          pnl_change: 0,
-          friction_change: 0,
-          fee_change: 0,
-          virtual_pnl_change: 0
-        }
-      }
-    },
-    async resetPositionState() {
-      try {
-        await this.$confirm('确认重置仓位状态? 该操作会清除所有策略的仓位信息，请谨慎操作!', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        this.resettingPositionState = true
-        await resetPositionStateApi()
-        this.$message.success('仓位状态重置成功！')
-        this.getPositionState() // 重新获取仓位状态
-      } catch (error) {
-        if (error !== 'cancel') {
-          this.$message.error('重置仓位状态失败')
-        }
-      } finally {
-        this.resettingPositionState = false
-      }
-    },
     formatDate(dateStr) {
       if (!dateStr) return ''
       const d = new Date(dateStr)
@@ -687,30 +339,6 @@ export default {
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
     },
     formatNumber,
-    formatAmount(value) {
-      if (value === null || value === undefined) return 'N/A'
-      return formatNumber(value, 4)
-    },
-    formatChangeRate(rate) {
-      if (rate === null || rate === undefined) return ''
-      // 确保rate是数字类型
-      const numRate = parseFloat(rate) || 0
-      const sign = numRate > 0 ? '+' : ''
-      return `${sign}${numRate.toFixed(2)}%`
-    },
-    getChangeRateClass(rate) {
-      if (rate === null || rate === undefined) return ''
-      // 确保rate是数字类型
-      const numRate = parseFloat(rate) || 0
-      return numRate > 0 ? 'text-success' : numRate < 0 ? 'text-danger' : ''
-    },
-    getPnlColor(pnl) {
-      if (pnl === null || pnl === undefined) return ''
-      const numPnl = parseFloat(pnl) || 0
-      if (numPnl > 0) return '#67c23a'
-      if (numPnl < 0) return '#f56c6c'
-      return ''
-    },
     tableRowClassName({ row }) {
       return row.is_fake ? 'fake-row' : ''
     }
@@ -764,102 +392,10 @@ export default {
 .text-danger {
   color: #f56c6c;
 }
-.mb-4 {
-  margin-bottom: 1rem;
-}
-.mt-3 {
-  margin-top: 0.75rem;
-}
-.mt-4 {
-  margin-top: 1rem;
-}
-.mt-0 {
-  margin-top: 0;
-}
-.mt-2 {
-  margin-top: 0.5rem;
-}
 .el-table {
   font-size: 14px;
 }
 :deep(.el-table .fake-row .cell) {
   color: rgb(17, 130, 243) !important;
-}
-
-/* 仓位状态卡片样式 */
-.card-title {
-  font-size: 1.3rem;
-  font-weight: 500;
-}
-
-.statistics-container {
-  padding: 16px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  
-  .el-row {
-    margin-bottom: 0 !important;
-  }
-  
-  .el-row + .el-row {
-    margin-top: 8px !important;
-  }
-}
-
-.el-statistic {
-  --el-statistic-content-font-size: 24px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.statistic-card {
-  height: 80px;
-  padding: 16px;
-  border-radius: 4px;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  
-  &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff;
-  }
-}
-
-.statistic-footer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
-  margin-top: 0;
-  flex-shrink: 0;
-}
-
-.statistic-footer .footer-item {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-
-.statistic-footer .footer-item span:last-child {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 4px;
-}
-
-.text-success {
-  color: var(--el-color-success);
-}
-
-.text-danger {
-  color: var(--el-color-error);
 }
 </style> 

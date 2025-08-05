@@ -240,7 +240,9 @@ const updateAssetChartData = () => {
       const pnl = parseFloat(item.pnl || 0)
       if (pnl === 0) return 0
       const ratio = (fee / pnl) * 1000
-      return isNaN(ratio) ? 0 : parseFloat(ratio.toFixed(2))
+      const result = isNaN(ratio) ? 0 : parseFloat(ratio.toFixed(2))
+      // 费用比限制最小0
+      return Math.max(0, result)
     })
     
     const option = {
