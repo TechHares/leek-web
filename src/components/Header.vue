@@ -2,20 +2,35 @@
   <div class="header">
     <div class="header-left">
       <el-icon class="menu-toggle" @click="$emit('toggle-sidebar')"><Menu /></el-icon>
-      <el-select
-        v-model="selectedProjectId"
-        placeholder="请选择项目"
-        style="font-size: 22px; font-weight: bold; min-width: 100px;margin-left: 10px;"
-        @change="handleProjectChange"
-        filterable
-      >
-        <el-option
-          v-for="item in projects"
-          :key="item.id"
-          :label="item.name"
-          :value="String(item.id)"
-        />
-      </el-select>
+      <div class="project-selector">
+        <el-select
+          v-model="selectedProjectId"
+          placeholder="请选择项目"
+          style="font-size: 22px; font-weight: bold; min-width: 100px;margin-left: 10px;"
+          @change="handleProjectChange"
+          filterable
+        >
+          <el-option
+            v-for="item in projects"
+            :key="item.id"
+            :label="item.name"
+            :value="String(item.id)"
+          />
+        </el-select>
+        <div 
+          v-if="currentProject" 
+          class="project-status-icon"
+          :class="{ 'enabled': currentProject.is_enabled, 'disabled': !currentProject.is_enabled }"
+          :title="currentProject.is_enabled ? '项目已启用' : '项目已暂停'"
+        >
+          <el-icon v-if="currentProject.is_enabled" class="status-icon enabled">
+            <Stopwatch />
+          </el-icon>
+          <el-icon v-else class="status-icon disabled">
+            <Stopwatch />
+          </el-icon>
+        </div>
+      </div>
     </div>
     
     <div class="header-right">
@@ -59,14 +74,28 @@
       <el-table :data="projects" style="width: 100%" v-loading="loading">
         <el-table-column prop="name" label="项目名称" />
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
+        <el-table-column label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.is_enabled ? 'success' : 'warning'" size="small">
+              {{ scope.row.is_enabled ? '已启用' : '已暂停' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180">
           <template #default="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button-group>
+              <el-button 
+                :type="scope.row.is_enabled ? 'warning' : 'success'" 
+                link 
+                @click="handleToggleProjectStatus(scope.row)"
+              >
+                {{ scope.row.is_enabled ? '暂停' : '启用' }}
+              </el-button>
               <el-button type="primary" link @click="handleEditProject(scope.row)">
                 编辑
               </el-button>
@@ -115,7 +144,7 @@
 
 <script setup>
 import { computed, ref, onMounted, watch } from 'vue'
-import { Menu, User, ArrowDown, Setting, SwitchButton, Plus } from '@element-plus/icons-vue'
+import { Menu, User, ArrowDown, Setting, SwitchButton, Plus, Stopwatch } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProjects, createProject, updateProject, deleteProject } from '@/api/project'
@@ -163,6 +192,10 @@ const selectedProjectId = ref(null)
 const projectForm = ref({
   name: '',
   description: ''
+})
+
+const currentProject = computed(() => {
+  return projects.value.find(p => String(p.id) === selectedProjectId.value)
 })
 
 const projectRules = {
@@ -219,6 +252,22 @@ const handleDeleteProject = async (row) => {
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleToggleProjectStatus = async (row) => {
+  try {
+    const action = row.is_enabled ? '暂停' : '启用'
+    await ElMessageBox.confirm(`确定要${action}该项目吗？`, '提示', {
+      type: 'warning'
+    })
+    await updateProject(row.id, { is_enabled: !row.is_enabled })
+    ElMessage.success(`${action}成功`)
+    loadProjects()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('操作失败')
     }
   }
 }
@@ -335,5 +384,45 @@ defineEmits(['toggle-sidebar', 'logout', 'open-profile', 'openSystemConfig'])
   display: flex;
   justify-content: flex-end;
   margin-bottom: 20px;
+}
+
+.project-selector {
+  display: flex;
+  align-items: center;
+}
+
+.project-status-icon {
+  margin-left: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  padding: 4px;
+}
+
+.project-status-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.status-icon {
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.status-icon.enabled {
+  color: #67c23a;
+}
+
+.status-icon.disabled {
+  color: #e6a23c;
+}
+
+.project-status-icon.enabled:hover .status-icon.enabled {
+  color: #85ce61;
+  transform: scale(1.1);
+}
+
+.project-status-icon.disabled:hover .status-icon.disabled {
+  color: #f0ad4e;
+  transform: scale(1.1);
 }
 </style> 

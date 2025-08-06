@@ -10,7 +10,7 @@ export function createProject(data) {
 }
 
 export function updateProject(id, data) {
-  return apiClient.put(`/projects/${id}`, data)
+  return apiClient.patch(`/projects/${id}`, data)
 }
 
 export function deleteProject(id) {
