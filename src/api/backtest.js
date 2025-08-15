@@ -1,38 +1,28 @@
 import apiClient from './client'
 
-// 获取回测记录列表
+// Walk-forward: 创建任务
+export function createWalkForwardTask(data) {
+  return apiClient.post('/backtest/walk-forward', data)
+}
+
+// 获取任务
+export function getBacktestTask(taskId) {
+  return apiClient.get(`/backtest/${taskId}`)
+}
+
+// 回测记录：列表
 export function getBacktestRecords(params) {
-  return apiClient.get('/backtest/records', { params })
+  return apiClient.get('/backtest', { params })
 }
 
-// 获取回测记录详情
+// 回测记录：详情（别名到任务查询）
 export function getBacktestRecord(id) {
-  return apiClient.get(`/backtest/records/${id}`)
+  return apiClient.get(`/backtest/${id}`)
 }
 
-// 创建回测
-export function createBacktest(data) {
-  return apiClient.post('/backtest', data)
-}
-
-// 获取回测结果
-export function getBacktestResult(id) {
-  return apiClient.get(`/backtest/${id}/result`)
-}
-
-// 获取回测K线数据
-export function getBacktestKlines(id, params) {
-  return apiClient.get(`/backtest/${id}/klines`, { params })
-}
-
-// 获取回测交易记录
-export function getBacktestTrades(id, params) {
-  return apiClient.get(`/backtest/${id}/trades`, { params })
-}
-
-// 删除回测记录
+// 回测记录：删除
 export function deleteBacktestRecord(id) {
-  return apiClient.delete(`/backtest/records/${id}`)
+  return apiClient.delete(`/backtest/${id}`)
 }
 
 // 获取可用于回测的策略列表
@@ -43,4 +33,21 @@ export function getStrategiesForBacktest() {
 // 获取可用于回测的数据源列表
 export function getDataSourcesForBacktest() {
   return apiClient.get('/datasources', { params: { is_enabled: 1 } })
+}
+
+// Backtest Config APIs
+export function listBacktestConfigs(params) {
+  return apiClient.get('/backtest/config', { params })
+}
+
+export function createBacktestConfig(data) {
+  return apiClient.post('/backtest/config', data)
+}
+
+export function updateBacktestConfig(id, data) {
+  return apiClient.put(`/backtest/config/${id}`, data)
+}
+
+export function deleteBacktestConfig(id) {
+  return apiClient.delete(`/backtest/config/${id}`)
 }

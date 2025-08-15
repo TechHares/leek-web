@@ -95,7 +95,7 @@
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="avg_holding_time" label="持仓时间" min-width="100" sortable>
+                <el-table-column prop="avg_holding_time" label="平均持仓时间" min-width="100" sortable>
                   <template #default="scope">
                     {{ formatNumber(scope.row.avg_holding_time, 1) }} 小时
                   </template>

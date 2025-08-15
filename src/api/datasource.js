@@ -26,8 +26,8 @@ export function deleteDataSource(id) {
 }
 
 // 获取数据源模板
-export function getDataSourceTemplates() {
-  return apiClient.get('/templates/datasource')
+export function getDataSourceTemplates(params) {
+  return apiClient.get('/templates/datasource', { params })
 }
 
 // 获取数据源参数定义（动态）

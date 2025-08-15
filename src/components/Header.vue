@@ -20,15 +20,24 @@
         <div 
           v-if="currentProject" 
           class="project-status-icon"
-          :class="{ 'enabled': currentProject.is_enabled, 'disabled': !currentProject.is_enabled }"
-          :title="currentProject.is_enabled ? '项目已启用' : '项目已暂停'"
+          :class="{ 'enabled': currentProject.is_enabled, 'disabled': !currentProject.is_enabled, 'loading': isStatusToggling }"
+          :title="(currentProject.is_enabled ? '项目已启用' : '项目已暂停') + (isStatusToggling ? '（处理中…）' : '（点击切换）')"
+          @click="!isStatusToggling && handleToggleProjectStatus(currentProject)"
+          :aria-busy="isStatusToggling"
         >
-          <el-icon v-if="currentProject.is_enabled" class="status-icon enabled">
-            <Stopwatch />
-          </el-icon>
-          <el-icon v-else class="status-icon disabled">
-            <Stopwatch />
-          </el-icon>
+          <template v-if="isStatusToggling">
+            <el-icon class="status-icon is-loading">
+              <Loading />
+            </el-icon>
+          </template>
+          <template v-else>
+            <el-icon v-if="currentProject.is_enabled" class="status-icon enabled">
+              <Open />
+            </el-icon>
+            <el-icon v-else class="status-icon disabled">
+              <TurnOff />
+            </el-icon>
+          </template>
         </div>
       </div>
     </div>
@@ -89,13 +98,7 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button-group>
-              <el-button 
-                :type="scope.row.is_enabled ? 'warning' : 'success'" 
-                link 
-                @click="handleToggleProjectStatus(scope.row)"
-              >
-                {{ scope.row.is_enabled ? '暂停' : '启用' }}
-              </el-button>
+              
               <el-button type="primary" link @click="handleEditProject(scope.row)">
                 编辑
               </el-button>
@@ -144,10 +147,10 @@
 
 <script setup>
 import { computed, ref, onMounted, watch } from 'vue'
-import { Menu, User, ArrowDown, Setting, SwitchButton, Plus, Stopwatch } from '@element-plus/icons-vue'
+import { Menu, User, ArrowDown, Setting, Plus, Open, TurnOff, Loading } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getProjects, createProject, updateProject, deleteProject } from '@/api/project'
+import { getProjects, createProject, updateProject, deleteProject, toggleProjectStatus } from '@/api/project'
 import { formatDate } from '@/utils/format'
 
 const router = useRouter()
@@ -184,6 +187,7 @@ const projectDialogVisible = ref(false)
 const projectFormVisible = ref(false)
 const formType = ref('create')
 const loading = ref(false)
+const isStatusToggling = ref(false)
 const submitting = ref(false)
 const projects = ref([])
 const projectFormRef = ref(null)
@@ -262,13 +266,16 @@ const handleToggleProjectStatus = async (row) => {
     await ElMessageBox.confirm(`确定要${action}该项目吗？`, '提示', {
       type: 'warning'
     })
-    await updateProject(row.id, { is_enabled: !row.is_enabled })
+    isStatusToggling.value = true
+    await toggleProjectStatus(row.id, !row.is_enabled)
     ElMessage.success(`${action}成功`)
     loadProjects()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败')
     }
+  } finally {
+    isStatusToggling.value = false
   }
 }
 
@@ -392,11 +399,11 @@ defineEmits(['toggle-sidebar', 'logout', 'open-profile', 'openSystemConfig'])
 }
 
 .project-status-icon {
-  margin-left: 8px;
+  margin-left: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
   border-radius: 50%;
-  padding: 4px;
+  padding: 6px;
 }
 
 .project-status-icon:hover {
@@ -404,25 +411,46 @@ defineEmits(['toggle-sidebar', 'logout', 'open-profile', 'openSystemConfig'])
 }
 
 .status-icon {
-  font-size: 16px;
+  font-size: 26px;
   transition: all 0.3s ease;
+}
+
+.status-icon.is-loading {
+  color: #909399;
+  animation: icon-rotate 1s linear infinite;
 }
 
 .status-icon.enabled {
   color: #67c23a;
+  text-shadow: 0 0 6px rgba(103, 194, 58, 0.45);
 }
 
 .status-icon.disabled {
-  color: #e6a23c;
+  color: #f56c6c;
+  text-shadow: 0 0 6px rgba(245, 108, 108, 0.45);
 }
 
 .project-status-icon.enabled:hover .status-icon.enabled {
-  color: #85ce61;
-  transform: scale(1.1);
+  color: #95d475;
+  transform: scale(1.12);
 }
 
 .project-status-icon.disabled:hover .status-icon.disabled {
-  color: #f0ad4e;
-  transform: scale(1.1);
+  color: #fb8c8c;
+  transform: scale(1.12);
+}
+
+/* 更强的 hover 背景反馈 */
+.project-status-icon.enabled:hover {
+  background-color: rgba(103, 194, 58, 0.12);
+}
+
+.project-status-icon.disabled:hover {
+  background-color: rgba(245, 108, 108, 0.12);
+}
+
+@keyframes icon-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style> 

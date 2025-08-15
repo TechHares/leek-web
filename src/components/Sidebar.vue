@@ -68,8 +68,18 @@
         </template>
         <el-menu-item index="/strategy/strategy">策略管理</el-menu-item>
         <el-menu-item index="/strategy/signal">策略信号</el-menu-item>
-        <el-menu-item index="/strategy/backtest">策略回测</el-menu-item>
-        <!-- <el-menu-item index="/strategy/risk">策略风险信息</el-menu-item> -->
+        <!-- <el-menu-item index="/strategy/risk">策略风险信息</el菜单> -->
+      </el-sub-menu>
+
+      <!-- 策略回测（一级菜单） -->
+      <el-sub-menu index="backtest">
+        <template #title>
+          <el-icon><Guide /></el-icon>
+          <span>策略回测</span>
+        </template>
+        <el-menu-item index="/backtest/records">回测记录</el-menu-item>
+        <el-menu-item index="/backtest/config">数据配置</el-menu-item>
+        <el-menu-item index="/backtest/cost">费用配置</el-menu-item>
       </el-sub-menu>
       
       <!-- 模型 -->

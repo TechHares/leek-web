@@ -122,22 +122,22 @@ const routes = [
         meta: { title: '策略信号' }
       },
       {
-        path: 'strategy/backtest',
+        path: 'backtest/records',
         name: 'BacktestRecords',
-        component: () => import('@/views/strategy/BacktestRecords.vue'),
-        meta: { title: '策略回测' }
+        component: () => import('@/views/backtest/BacktestRecords.vue'),
+        meta: { title: '回测记录' }
       },
       {
-        path: 'strategy/backtest/create',
-        name: 'BacktestCreate',
-        component: () => import('@/views/strategy/Backtest.vue'),
-        meta: { title: '新建回测' }
+        path: 'backtest/config',
+        name: 'BacktestDataConfig',
+        component: () => import('@/views/backtest/DataConfig.vue'),
+        meta: { title: '数据配置' }
       },
       {
-        path: 'strategy/backtest/:id',
-        name: 'BacktestDetail',
-        component: () => import('@/views/strategy/Backtest.vue'),
-        meta: { title: '回测详情' }
+        path: 'backtest/cost',
+        name: 'BacktestCostConfig',
+        component: () => import('@/views/backtest/CostConfig.vue'),
+        meta: { title: '费用配置' }
       },
       
     ]

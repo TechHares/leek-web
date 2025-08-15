@@ -365,16 +365,16 @@
             <div class="detail-item">
               <label>金额:</label>
               <span :class="getAmountClass(detail.amount, detail.transaction_type)">
-                {{ scope.row.amount > 0 ? '+' : '' }} {{ formatNumber(detail.amount, 8) }}
+                {{ scope.row.amount > 0 ? '+' : '' }} {{ formatNumber(detail.amount, 12) }}
               </span>
             </div>
             <div class="detail-item">
               <label>变动前余额:</label>
-              <span>{{ detail.balance_before ? formatNumber(detail.balance_before, 8) : '-' }}</span>
+              <span>{{ detail.balance_before ? formatNumber(detail.balance_before, 12) : '-' }}</span>
             </div>
             <div class="detail-item">
               <label>变动后余额:</label>
-              <span>{{ detail.balance_after ? formatNumber(detail.balance_after, 8) : '-' }}</span>
+              <span>{{ detail.balance_after ? formatNumber(detail.balance_after, 12) : '-' }}</span>
             </div>
           </div>
         </div>
