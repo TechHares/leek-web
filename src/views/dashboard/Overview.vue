@@ -104,34 +104,39 @@ const fetchData = async () => {
       return
     }
     const res = await getDashboardOverview()
-    const resources = res.data?.resources
-    if (!resources) return
-    state.value = res.data.state
-    coreVersion.value = res.data.core_version
-    sysVersion.value = res.data.sys_version
+    
+    // 先设置版本信息，这些信息总是可用的
+    coreVersion.value = res.data.core_version || ''
+    sysVersion.value = res.data.sys_version || ''
     latestVersion.value = res.data.version || ''
     versionDescription.value = res.data.body || ''
-    const { cpu, memory, disk } = resources
-    barList.value = [
-      {
-        label: 'CPU',
-        percent: cpu.percent,
-        value: cpu.value,
-        status: cpu.status
-      },
-      {
-        label: '内存',
-        percent: memory.percent,
-        value: memory.value,
-        status: memory.status
-      },
-      {
-        label: '硬盘',
-        percent: disk.percent,
-        value: disk.value,
-        status: disk.status
-      }
-    ]
+    
+    // 然后处理资源和状态信息
+    const resources = res.data?.resources
+    if (resources) {
+      state.value = res.data.state
+      const { cpu, memory, disk } = resources
+      barList.value = [
+        {
+          label: 'CPU',
+          percent: cpu.percent,
+          value: cpu.value,
+          status: cpu.status
+        },
+        {
+          label: '内存',
+          percent: memory.percent,
+          value: memory.value,
+          status: memory.status
+        },
+        {
+          label: '硬盘',
+          percent: disk.percent,
+          value: disk.value,
+          status: disk.status
+        }
+      ]
+    }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   }
