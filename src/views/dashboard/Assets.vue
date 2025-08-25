@@ -68,8 +68,8 @@
             }">
             <template #title>
               <div style="display: inline-flex; align-items: center;color: #606266;">
-                年化收益率
-                <el-tooltip effect="light" content="年化收益率，反映投资回报的年化水平" placement="top">
+                {{ annualizedTitle }}
+                <el-tooltip effect="light" :content="annualizedTooltip" placement="top">
                   <el-icon style="margin-left: 4px" :size="12">
                     <InfoFilled />
                   </el-icon>
@@ -208,7 +208,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { getDashboardAsset } from '@/api/dashboard'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
@@ -229,6 +229,32 @@ const strategyPnlData = ref([])
 const strategyFeeData = ref([])
 const performanceMetrics = ref(null)
 const periodComparison = ref(null)
+const timeRangeInfo = ref(null)
+
+// 年化文案（< 365 天显示“估算年化收益率”）
+const annualizedTitle = computed(() => {
+  try {
+    let start = null, end = null
+    if (timeRangeInfo.value?.start_time && timeRangeInfo.value?.end_time) {
+      start = new Date(timeRangeInfo.value.start_time)
+      end = new Date(timeRangeInfo.value.end_time)
+    } else if (assetData.value && assetData.value.length >= 2) {
+      start = new Date(assetData.value[0].snapshot_time)
+      end = new Date(assetData.value[assetData.value.length - 1].snapshot_time)
+    }
+    if (!start || !end) return '年化收益率'
+    const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / (24 * 3600 * 1000)))
+    return days < 365 ? '估算年化收益率' : '年化收益率'
+  } catch (e) {
+    return '年化收益率'
+  }
+})
+
+const annualizedTooltip = computed(() => {
+  return annualizedTitle.value === '估算年化收益率'
+    ? '估算年化收益率，按当前区间收益外推到一年'
+    : '年化收益率，反映投资回报的年化水平'
+})
 
 // 时间范围处理
 const handleTimeRangeChange = () => {
@@ -284,6 +310,7 @@ const fetchData = async (startTime, endTime) => {
       strategyFeeData.value = response.data.strategy_fee || []
       performanceMetrics.value = response.data.performance_metrics || null
       periodComparison.value = response.data.period_comparison || null
+      timeRangeInfo.value = response.data.time_range || null
       
   }
   

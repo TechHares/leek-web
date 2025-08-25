@@ -7,7 +7,7 @@ export function createWalkForwardTask(data) {
 
 // 获取任务
 export function getBacktestTask(taskId) {
-  return apiClient.get(`/backtest/${taskId}`)
+  return apiClient.get(`/backtest/${taskId}`, { params: { expand_series: true } })
 }
 
 // 回测记录：列表
@@ -17,7 +17,7 @@ export function getBacktestRecords(params) {
 
 // 回测记录：详情（别名到任务查询）
 export function getBacktestRecord(id) {
-  return apiClient.get(`/backtest/${id}`)
+  return apiClient.get(`/backtest/${id}`, { params: { expand_series: true } })
 }
 
 // 回测记录：删除
