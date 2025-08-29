@@ -905,6 +905,13 @@ export default {
     async createData() {
       this.$refs['dataForm'].validate(async (valid) => {
         if (valid) {
+          // 验证数据源参数
+          const dataSourceValidationError = await this.validateDataSourceParams()
+          if (dataSourceValidationError) {
+            this.$message.error(dataSourceValidationError)
+            return
+          }
+          
           try {
             const tempToSubmit = { ...this.temp }
             tempToSubmit.params = this.temp.strategy_params || {}
@@ -1008,6 +1015,13 @@ export default {
       this.collapsePositionConfig()
       this.$refs['dataForm'].validate(async (valid) => {
         if (valid) {
+          // 验证数据源参数
+          const dataSourceValidationError = await this.validateDataSourceParams()
+          if (dataSourceValidationError) {
+            this.$message.error(dataSourceValidationError)
+            return
+          }
+          
           try {
             const tempToSubmit = { ...this.temp }
             tempToSubmit.params = this.temp.strategy_params || {}
@@ -1278,6 +1292,44 @@ export default {
     async handleViewData(row) {
       this.currentStrategyData = row
       this.dataDialogVisible = true
+    },
+    async validateDataSourceParams() {
+      // 检查每个选中的数据源的必填参数
+      for (const dsId of this.temp.selectedDataSourceCls) {
+        const ds = this.dataSources.find(d => d.id === dsId)
+        if (!ds) continue
+        
+        // 直接获取数据源参数定义
+        try {
+          const { data: parameters } = await fetchDataSourceParameters({
+            class_name: ds.class_name,
+            params: ds.params || {}
+          })
+          
+          if (!parameters || parameters.length === 0) {
+            continue
+          }
+          
+          const dsParams = this.temp.data_source_params[dsId] || {}
+          
+          // 检查必填参数
+          for (const param of parameters) {
+            if (param.required) {
+              const value = dsParams[param.name]
+              
+              // 检查空值：undefined, null, 空字符串, 空数组
+              if (value === undefined || value === null || value === '' || 
+                  (Array.isArray(value) && value.length === 0)) {
+                return `数据源 "${ds.name}" 的必填参数 "${param.label || param.name}" 不能为空`
+              }
+            }
+          }
+        } catch (error) {
+          continue
+        }
+      }
+      
+      return null
     }
   }
 }
