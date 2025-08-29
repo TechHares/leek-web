@@ -31,6 +31,7 @@
             <el-form-item label="单次开仓最大仓位比例(%)" prop="max_ratio" required>
               <el-input v-model="form.max_ratio" type="number" placeholder="请输入单次开仓最大仓位比例" />
             </el-form-item>
+
           </el-col>
           <el-col :span="12">
             <el-form-item label="默认交易模式" prop="trade_mode" required>
@@ -85,58 +86,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="风控策略" prop="risk_policies">
-          <el-row :gutter="24" style="width: 100%;">
-            <el-col :span="7" style="min-width: 200px;">
-              <div class="policy-list" style="min-height: 220px;">
-                <div
-                  v-for="(tpl, idx) in policyTemplates"
-                  :key="tpl.cls"
-                  @click="selectPolicy(idx)"
-                  :class="{active: idx === selectedPolicyIdx}"
-                  style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;"
-                >
-                  <span>
-                    {{ tpl.name }}
-                    <el-tag
-                      v-if="tpl.tag"
-                      size="small"
-                      type="info"
-                      effect="plain"
-                      style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
-                    >
-                      {{ formatTag(tpl.tag) }}
-                    </el-tag>
-                  </span>
-                  <el-switch
-                    :model-value="isPolicyEnabled(tpl.name)"
-                    @update:model-value="val => setPolicyEnabled(tpl.name, val)"
-                    @click.stop
-                  />
-                </div>
-                <div v-if="!policyTemplates.length" style="color: #b0b3b8; text-align: center; margin-top: 40px;">暂无策略</div>
-              </div>
-            </el-col>
-            <el-col :span="1" class="vertical-divider-col">
-              <div class="vertical-divider"></div>
-            </el-col>
-            <el-col :span="16">
-              <div
-                v-if="currentTemplate"
-                :class="{ 'param-disabled': !isPolicyEnabled(currentTemplate.name) }"
-                style="padding: 2px; background: #fff; min-height: 100px;"
-              >
-                <DynamicForm
-                  :fields="currentTemplate.parameters || []"
-                  v-model:modelValue="currentParams"
-                  :key="currentTemplate.name"
-                  :disabled="!isPolicyEnabled(currentTemplate.name)"
-                />
-              </div>
-              <div v-else style="color: #b0b3b8; padding: 24px;">请选择左侧策略</div>
-            </el-col>
-          </el-row>
-        </el-form-item>
+        
       </el-form>
     </el-card>
   </div>
@@ -145,8 +95,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPositionSetting, updatePositionSetting, getPolicyTemplates } from '@/api/position'
-import DynamicForm from '@/components/DynamicForm.vue'
+import { getPositionSetting, updatePositionSetting } from '@/api/position'
 import { formatTag } from '@/utils/format'
 import { QuestionFilled } from '@element-plus/icons-vue'
 
@@ -158,7 +107,6 @@ const form = ref({
   max_symbol_ratio: '',
   max_amount: '',
   max_ratio: '',
-  risk_policies: [], // [{ name, enabled, params }]
   trade_mode: 'isolated',
   default_leverage: '3',
   order_type: 2, // LimitOrder
@@ -167,58 +115,7 @@ const form = ref({
 const saving = ref(false)
 const resettingPositionState = ref(false)
 const formRef = ref(null)
-const policyTemplates = ref([])
-const riskPoliciesSetting = ref([]) // setting数据
-const selectedPolicyIdx = ref(0)
 const positionData = ref(null)
-
-const getPolicySetting = (name) => riskPoliciesSetting.value.find(p => p.name === name) || {}
-
-const currentTemplate = computed(() => policyTemplates.value[selectedPolicyIdx.value] || null)
-const currentPolicySetting = computed(() => getPolicySetting(currentTemplate.value?.name))
-
-const currentParams = computed({
-  get() {
-    if (!currentTemplate.value) return {}
-    // 直接用 riskPoliciesSetting 里的 params，回显优先
-    const setting = getPolicySetting(currentTemplate.value.name)
-    const params = {}
-    for (const p of currentTemplate.value.parameters || []) {
-      params[p.name] = (setting.params && setting.params[p.name] !== undefined)
-        ? setting.params[p.name]
-        : p.default
-    }
-    return params
-  },
-  set(val) {
-    const name = currentTemplate.value?.name
-    if (!name) return
-    let policy = riskPoliciesSetting.value.find(p => p.name === name)
-    if (!policy) {
-      policy = { 
-        name, 
-        enabled: false, 
-        params: {},
-        class_name: currentTemplate.value.cls 
-      }
-      riskPoliciesSetting.value.push(policy)
-    }
-    policy.params = { ...val }
-  }
-})
-
-const isPolicyEnabled = (name) => (getPolicySetting(name)?.enabled) || false
-const setPolicyEnabled = (name, val) => {
-  let policy = riskPoliciesSetting.value.find(p => p.name === name)
-  if (!policy) {
-    const tpl = policyTemplates.value.find(t => t.name === name)
-    policy = { name, enabled: val, params: {}, class_name: tpl?.cls }
-    riskPoliciesSetting.value.push(policy)
-  }
-  policy.enabled = val
-}
-
-const selectPolicy = (idx) => { selectedPolicyIdx.value = idx }
 
 const loadSetting = async () => {
   try {
@@ -226,45 +123,32 @@ const loadSetting = async () => {
     // 把所有字段都赋值到 form
     Object.keys(form.value).forEach(key => {
       if (data[key] !== undefined) {
-        form.value[key] = data[key]
+        // 对于比例字段，将小数转换为百分比显示
+        if (key === 'max_strategy_ratio' || key === 'max_symbol_ratio' || key === 'max_ratio') {
+          form.value[key] = (parseFloat(data[key]) * 100).toFixed(1)
+        } else {
+          form.value[key] = data[key]
+        }
       }
     })
 
-    // 确保每个策略都有 class_name
-    riskPoliciesSetting.value = (data.risk_policies || []).map(policy => {
-      if (!policy.class_name) {
-        const tpl = policyTemplates.value.find(t => t.name === policy.name)
-        if (tpl) {
-          policy.class_name = tpl.cls
-        }
-      }
-      return policy
-    })
   } catch (e) {
     ElMessage.error('加载仓位设置失败')
   }
 }
 
-
-
 const saveSetting = async () => {
   saving.value = true
   try {
-    // 确保每个策略都有 class_name
-    const policiesToSave = riskPoliciesSetting.value.map(policy => {
-      if (!policy.class_name) {
-        const tpl = policyTemplates.value.find(t => t.name === policy.name)
-        if (tpl) {
-          policy.class_name = tpl.cls
-        }
-      }
-      return policy
-    })
-    
-    await updatePositionSetting({
+    // 创建保存数据，将百分比转换回小数
+    const saveData = {
       ...form.value,
-      risk_policies: JSON.parse(JSON.stringify(policiesToSave))
-    })
+      max_strategy_ratio: (parseFloat(form.value.max_strategy_ratio) / 100).toFixed(4),
+      max_symbol_ratio: (parseFloat(form.value.max_symbol_ratio) / 100).toFixed(4),
+      max_ratio: (parseFloat(form.value.max_ratio) / 100).toFixed(4)
+    }
+    
+    await updatePositionSetting(saveData)
     ElMessage.success('保存成功')
   } catch (e) {
     ElMessage.error('保存失败')
@@ -273,10 +157,7 @@ const saveSetting = async () => {
 }
 
 
-
 onMounted(async () => {
-  const { data } = await getPolicyTemplates()
-  policyTemplates.value = data
   await loadSetting()
 })
 </script>

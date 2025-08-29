@@ -273,7 +273,7 @@
           fit
           highlight-current-row
         >
-          <el-table-column label="时间" align="center" width="160" fixed="left">
+          <el-table-column label="时间" align="center" fixed="left">
             <template #default="scope">
               <div class="time-column">
                 <div class="time-main">{{ formatDate(scope.row.created_at) }}</div>
@@ -281,7 +281,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="流水类型" align="center" width="100">
+          <el-table-column label="流水类型" align="center">
             <template #default="scope">
               <el-tag :type="getTransactionTypeTag(scope.row.transaction_type)">
                 {{ getTransactionTypeText(scope.row.transaction_type) }}
@@ -289,19 +289,19 @@
             </template>
           </el-table-column>
          
-          <el-table-column label="变动前余额" align="right" width="120">
+          <el-table-column label="变动前余额" align="right">
             <template #default="scope">
               {{ scope.row.balance_before ? formatNumber(scope.row.balance_before, 4) : '-' }}
             </template>
           </el-table-column>
-           <el-table-column label="金额" align="right" width="120">
+           <el-table-column label="金额" align="right">
             <template #default="scope">
               <span :class="getAmountClass(scope.row.amount, scope.row.transaction_type)">
                 {{ scope.row.amount > 0 ? '+' : '' }}{{ formatNumber(scope.row.amount, 4) }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="变动后余额" align="right" width="120">
+          <el-table-column label="变动后余额" align="right">
             <template #default="scope">
               {{ scope.row.balance_after ? formatNumber(scope.row.balance_after, 4) : '-' }}
             </template>

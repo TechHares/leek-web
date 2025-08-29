@@ -79,3 +79,8 @@ export function getStrategyPolicyTemplates(params) {
 export function getStrategyFabricatorTemplates(params) {
   return apiClient.get('/templates/strategy/fabricator', { params })
 }
+
+// 获取策略实例列表（每个策略的实例IDs）
+export function getStrategyInstances() {
+  return apiClient.get('/strategies/instances')
+}

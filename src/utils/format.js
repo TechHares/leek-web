@@ -27,6 +27,20 @@ export function formatDate(date, format = 'YYYY-MM-DD HH:mm:ss') {
 }
 
 /**
+ * 格式化日期时间（简化版本）
+ * @param {string|Date} dateStr 日期字符串或日期对象
+ * @returns {string} 格式化后的日期时间字符串 (YYYY-MM-DD HH:mm)
+ */
+export function formatDateTime(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  
+  const pad = n => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/**
  * 格式化数字
  * @param {number} num 要格式化的数字
  * @param {number} decimals 小数位数

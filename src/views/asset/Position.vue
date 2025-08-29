@@ -56,16 +56,7 @@
                 <el-option label="商品" value="commodity" />
                 <el-option label="期权" value="option" />
               </el-select>
-              <el-select
-                v-model="listQuery.is_fake"
-                placeholder="仓位"
-                clearable
-                style="width: 120px;"
-                class="filter-item"
-              >
-                <el-option label="真仓位" :value="false" />
-                <el-option label="虚拟仓位" :value="true" />
-              </el-select>
+
               <el-button type="primary" @click="handleFilter" class="filter-item">查询</el-button>
             </div>
           </div>
@@ -110,11 +101,17 @@
           <el-table-column label="累计交易金额" align="right">
             <template #default="scope">
               {{ formatNumber(scope.row.total_amount, 4) }}
+              <span v-if="scope.row.virtual_positions && scope.row.virtual_positions.length > 0">
+                (+{{ formatNumber(getTotalAmountWithVirtual(scope.row), 4) }})
+              </span>
             </template>
           </el-table-column>
           <el-table-column label="累计仓位数量" align="right">
             <template #default="scope">
               {{ formatNumber(scope.row.total_sz, 12) }}
+              <span v-if="scope.row.virtual_positions && scope.row.virtual_positions.length > 0">
+                (+{{ formatNumber(getTotalSzWithVirtual(scope.row), 12) }})
+              </span>
             </template>
           </el-table-column>
           <el-table-column label="平均开仓价" align="right">
@@ -127,13 +124,13 @@
               <span :class="scope.row.pnl >= 0 ? 'text-success' : 'text-danger'">
                 {{ formatNumber(scope.row.pnl, 8) }}
               </span>
+              <span v-if="scope.row.virtual_positions && scope.row.virtual_positions.length > 0" :class="getTotalPnlWithVirtual(scope.row) >= 0 ? 'text-success' : 'text-danger'">
+                (<span v-if="getTotalPnlWithVirtual(scope.row) >= 0">+</span>{{ formatNumber(getTotalPnlWithVirtual(scope.row), 8) }})
+              </span>
             </template>
           </el-table-column>
           <el-table-column label="状态" align="center">
             <template #default="scope">
-              <el-tag v-if="scope.row.is_fake" type="warning">
-                虚拟
-              </el-tag>
               <el-tag :type="scope.row.is_closed ? 'info' : 'success'">
                 {{ scope.row.is_closed ? '已平仓' : '持仓中' }}
               </el-tag>
@@ -198,8 +195,18 @@
         </el-descriptions-item>
         <el-descriptions-item label="金额">{{ formatNumber(detail.amount, 4) }}</el-descriptions-item>
         <el-descriptions-item label="数量">{{ formatNumber(detail.sz, 4) }}</el-descriptions-item>
-        <el-descriptions-item label="累计交易金额">{{ formatNumber(detail.total_amount, 4) }}</el-descriptions-item>
-        <el-descriptions-item label="累计成交数量">{{ formatNumber(detail.total_sz, 4) }}</el-descriptions-item>
+        <el-descriptions-item label="累计交易金额">
+          {{ formatNumber(detail.total_amount, 4) }}
+          <span v-if="detail.virtual_positions && detail.virtual_positions.length > 0">
+            (+{{ formatNumber(getTotalAmountWithVirtual(detail), 4) }})
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item label="累计成交数量">
+          {{ formatNumber(detail.total_sz, 4) }}
+          <span v-if="detail.virtual_positions && detail.virtual_positions.length > 0">
+            (+{{ formatNumber(getTotalSzWithVirtual(detail), 4) }})
+          </span>
+        </el-descriptions-item>
         <el-descriptions-item label="最大仓位价值">{{ formatNumber(detail.max_amount, 4) }}</el-descriptions-item>
         <el-descriptions-item label="最大持仓数量">{{ formatNumber(detail.max_sz, 4) }}</el-descriptions-item>
         <el-descriptions-item label="平均开仓价">{{ formatNumber(detail.cost_price, 12) }}</el-descriptions-item>
@@ -207,14 +214,19 @@
         <el-descriptions-item label="占资金比例">{{ formatNumber(detail.ratio*100, 1) }}%</el-descriptions-item>
         <el-descriptions-item label="最大仓位">{{ formatNumber(detail.max_sz, 4) }}</el-descriptions-item>
         <el-descriptions-item label="执行器ID">{{ detail.executor_id }}</el-descriptions-item>
-        <el-descriptions-item label="假仓位">
-          <el-tag :type="detail.is_fake ? 'warning' : 'info'">
-            {{ detail.is_fake ? '是' : '否' }}
+        <el-descriptions-item label="虚拟仓位">
+          <el-tag v-if="detail.virtual_positions && detail.virtual_positions.length > 0" type="warning">
+            有虚拟仓位({{ getVirtualPositionTotal(detail.virtual_positions) }})
           </el-tag>
+          <el-tag v-else type="info">无</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="盈亏">
           <span :class="detail.pnl >= 0 ? 'text-success' : 'text-danger'">
             {{ formatNumber(detail.pnl, 8) }}
+          </span>
+          <span v-if="detail.virtual_positions && detail.virtual_positions.length > 0" :class="getTotalPnlWithVirtual(detail) >= 0 ? 'text-success' : 'text-danger'">
+            (<span v-if="getTotalPnlWithVirtual(detail) >= 0">+</span>
+            {{ formatNumber(getTotalPnlWithVirtual(detail), 8) }})
           </span>
         </el-descriptions-item>
         <el-descriptions-item label="手续费">{{ formatNumber(detail.fee, 12) }}</el-descriptions-item>
@@ -230,6 +242,57 @@
         <el-descriptions-item label="更新时间">{{ formatDate(detail.updated_at) }}</el-descriptions-item>
         <el-descriptions-item label="仓位分布" v-if="!detail.is_closed">{{ detail.executor_sz ? JSON.stringify(detail.executor_sz, null, 2) : '-' }}</el-descriptions-item>
       </el-descriptions>
+
+      <!-- 虚拟仓位详情 -->
+      <div v-if="detail.virtual_positions && detail.virtual_positions.length > 0" style="margin-top: 20px;">
+        <h4 style="margin-bottom: 15px; color: #e6a23c;">虚拟仓位详情</h4>
+        <el-table :data="detail.virtual_positions" border size="small" style="width: 100%;">
+          <el-table-column label="风控策略ID" prop="policy_id" width="120" />
+          <el-table-column label="信号ID" prop="signal_id" width="120" />
+          <el-table-column label="仓位数量" align="right">
+            <template #default="scope">
+              {{ formatNumber(scope.row.sz, 8) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="仓位金额" align="right">
+            <template #default="scope">
+              {{ formatNumber(scope.row.amount, 4) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="仓位比例" align="right">
+            <template #default="scope">
+              {{ formatNumber(scope.row.ratio * 100, 2) }}%
+            </template>
+          </el-table-column>
+          <el-table-column label="开仓成本价" align="right">
+            <template #default="scope">
+              {{ formatNumber(scope.row.cost_price, 12) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="平仓成本价" align="right">
+            <template #default="scope">
+              {{ scope.row.close_price ? formatNumber(scope.row.close_price, 12) : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="已平仓数量" align="right">
+            <template #default="scope">
+              {{ formatNumber(scope.row.closed_sz, 8) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="盈亏" align="right">
+            <template #default="scope">
+              <span :class="scope.row.pnl >= 0 ? 'text-success' : 'text-danger'">
+                {{ formatNumber(scope.row.pnl, 8) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" align="center">
+            <template #default="scope">
+              {{ formatDate(scope.row.timestamp) }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
       <template #footer>
         <div class="text-end">
@@ -269,7 +332,7 @@ export default {
         is_closed: undefined,
         ins_type: undefined,
         asset_type: undefined,
-        is_fake: false
+
       },
       detailDialogVisible: false,
       detail: {}
@@ -339,6 +402,31 @@ export default {
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
     },
     formatNumber,
+    getVirtualPositionTotal(virtualPositions) {
+      if (!virtualPositions || virtualPositions.length === 0) {
+        return 0
+      }
+      // 计算虚拟仓位的总数量
+      const total = virtualPositions.reduce((sum, vp) => {
+        return sum + (parseFloat(vp.sz) || 0)
+      }, 0)
+      return formatNumber(total, 2)
+    },
+    getTotalAmountWithVirtual(position) {
+      return position.virtual_positions ? position.virtual_positions.reduce((sum, vp) => {
+        return sum + (parseFloat(vp.amount) || 0)
+      }, 0) : 0
+    },
+    getTotalSzWithVirtual(position) {
+      return position.virtual_positions ? position.virtual_positions.reduce((sum, vp) => {
+        return sum + (parseFloat(vp.sz) || 0)
+      }, 0) : 0
+    },
+    getTotalPnlWithVirtual(position) {
+      return position.virtual_positions ? position.virtual_positions.reduce((sum, vp) => {
+        return sum + (parseFloat(vp.pnl) || 0)
+      }, 0) : 0
+    },
     tableRowClassName({ row }) {
       return row.is_fake ? 'fake-row' : ''
     }

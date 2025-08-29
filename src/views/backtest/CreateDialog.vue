@@ -148,6 +148,54 @@
         </div>
       </el-form-item>
 
+      <el-divider content-position="left">风控</el-divider>
+      <el-form-item>
+        <el-row :gutter="24" style="width: 100%;">
+          <el-col :span="7" style="min-width: 200px;">
+            <div class="policy-list scrollable-policy-list">
+              <template v-for="(tpl, idx) in riskPolicyTemplates" :key="tpl.name">
+                <div
+                  @click="selectRiskPolicy(idx)"
+                  :class="{active: idx === selectedRiskPolicyIdx}"
+                  style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;"
+                >
+                  <span>
+                    {{ tpl.name }}
+                    <el-tag v-if="tpl.tag" size="small" type="info" effect="plain" style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;">
+                      {{ tpl.tag }}
+                    </el-tag>
+                  </span>
+                  <el-switch
+                    :model-value="isRiskPolicyEnabled(tpl.name)"
+                    @update:model-value="val => setRiskPolicyEnabled(tpl.name, val)"
+                    @click.stop
+                  />
+                </div>
+              </template>
+              <div v-if="!riskPolicyTemplates.length" style="color: #b0b3b8; text-align: center; margin-top: 40px;">暂无策略</div>
+            </div>
+          </el-col>
+          <el-col :span="1" class="vertical-divider-col">
+            <div class="vertical-divider"></div>
+          </el-col>
+          <el-col :span="15">
+            <div
+              v-if="currentRiskPolicyTemplate"
+              :class="{ 'param-disabled': !isRiskPolicyEnabled(currentRiskPolicyTemplate.name) }"
+              style="padding: 24px; background: #fff; border-radius: 8px; min-height: 160px;"
+            >
+              <DynamicForm
+                :fields="currentRiskPolicyTemplate.parameters || []"
+                v-model:modelValue="currentRiskPolicyParams"
+                :key="currentRiskPolicyTemplate.name"
+                :disabled="!isRiskPolicyEnabled(currentRiskPolicyTemplate.name)"
+              />
+            </div>
+            <div v-else style="color: #b0b3b8; padding: 24px;">请选择左侧策略</div>
+          </el-col>
+        </el-row>
+      </el-form-item>
+
       <el-form-item label="参数空间" v-if="form.enable_optim">
         <div class="param-space">
           <div v-for="(row, idx) in form.param_items" :key="idx" class="param-row">
@@ -327,7 +375,7 @@
 
 <script>
 import { listBacktestConfigs, createWalkForwardTask } from '@/api/backtest'
-import { getStrategyTemplates } from '@/api/strategy'
+import { getStrategyTemplates, getStrategyPolicyTemplates } from '@/api/strategy'
 import DynamicForm from '@/components/DynamicForm.vue'
 import { TradeInsType, insTypeDesc } from '@/utils/enum'
 import { QuestionFilled, InfoFilled } from '@element-plus/icons-vue'
@@ -360,6 +408,10 @@ export default {
       strategyTemplates: [],
       selectedStrategyTemplate: null,
       strategyParamFormKey: 0,
+      // 风控
+      riskPolicyTemplates: [],
+      selectedRiskPolicyIdx: 0,
+      riskPolicies: [],
       paramNameOptions: [],
       timeframeOptions: [
         { value: 'M1', label: '1分钟' },
@@ -433,6 +485,11 @@ export default {
     await this.loadAll()
     // 初始化阈值为标准
     this.applyThresholdPreset('standard')
+    // 加载风控策略模板
+    try {
+      const { data } = await getStrategyPolicyTemplates()
+      this.riskPolicyTemplates = data || []
+    } catch (e) { /* ignore */ }
     // 如果有外部传入的初始配置，填充表单
     if (this.initialConfig) {
       this.fillFromInitial(this.initialConfig)
@@ -502,6 +559,17 @@ export default {
           if (paramsToSet) this.form.params = paramsToSet
         }
         this.suggestName()
+        // 风控：根据初始配置回填
+        try {
+          const rps = Array.isArray(c.risk_policies) ? c.risk_policies : []
+          this.riskPolicies = []
+          for (const rp of rps) {
+            const cls = rp.class_name || rp.cls
+            const tpl = (this.riskPolicyTemplates || []).find(t => t.cls === cls)
+            const name = tpl ? tpl.name : (cls || 'policy')
+            this.riskPolicies.push({ name, enabled: true, params: rp.config || rp.params || {} })
+          }
+        } catch (e) { /* ignore */ }
       } catch (e) {
         // ignore
       }
@@ -538,7 +606,8 @@ export default {
       this.loadInFlight = true
       this.lastLoadPromise = Promise.all([
         this.loadConfigs(),
-        this.loadStrategyTemplates()
+        this.loadStrategyTemplates(),
+        this.loadRiskTemplates()
       ]).finally(() => {
         this.loadInFlight = false
       })
@@ -571,6 +640,12 @@ export default {
       } catch (e) {
         // ignore
       }
+    },
+    async loadRiskTemplates() {
+      try {
+        const { data } = await getStrategyPolicyTemplates()
+        this.riskPolicyTemplates = data || []
+      } catch (e) { /* ignore */ }
     },
     handleStrategyTemplateChange(className) {
       this.selectedStrategyTemplate = this.strategyTemplates.find(tpl => tpl.cls === className) || null
@@ -655,6 +730,22 @@ export default {
         }
       })
       this.suggestName()
+    },
+    // 风控相关
+    selectRiskPolicy(idx) {
+      this.selectedRiskPolicyIdx = idx
+    },
+    isRiskPolicyEnabled(name) {
+      const found = this.riskPolicies.find(p => p.name === name)
+      return found ? found.enabled : false
+    },
+    setRiskPolicyEnabled(name, val) {
+      let found = this.riskPolicies.find(p => p.name === name)
+      if (found) {
+        found.enabled = val
+      } else {
+        this.riskPolicies.push({ name, enabled: val, params: {} })
+      }
     },
     getParamLabel(name) {
       const found = this.paramNameOptions.find(i => i.value === name)
@@ -746,6 +837,12 @@ export default {
         quote_currency: this.form.quote_currency,
         ins_type: this.form.ins_type
       }
+      // 组装风控参数（仅传已启用的）
+      try {
+        payload.risk_policies = (this.riskPolicyTemplates || [])
+          .filter(tpl => this.isRiskPolicyEnabled(tpl.name))
+          .map(tpl => ({ class_name: tpl.cls, config: (this.riskPolicies.find(p => p.name === tpl.name)?.params) || {} }))
+      } catch (e) { /* ignore */ }
       return payload
     }
   }
@@ -881,6 +978,27 @@ export default {
         }
       }
       return total
+    },
+    currentRiskPolicyTemplate() {
+      return this.riskPolicyTemplates[this.selectedRiskPolicyIdx] || null
+    },
+    currentRiskPolicyParams: {
+      get() {
+        const tpl = this.currentRiskPolicyTemplate
+        if (!tpl) return {}
+        let found = this.riskPolicies.find(p => p.name === tpl.name)
+        if (!found) {
+          found = { name: tpl.name, enabled: false, params: {} }
+          this.riskPolicies.push(found)
+        }
+        return found.params
+      },
+      set(val) {
+        const tpl = this.currentRiskPolicyTemplate
+        if (!tpl) return
+        let found = this.riskPolicies.find(p => p.name === tpl.name)
+        if (found) found.params = val
+      }
     },
     totalTrainJobs() {
       return this.paramComboCount * this.cvFactor * this.windowCount * Math.max(1, this.symbolTfCount)

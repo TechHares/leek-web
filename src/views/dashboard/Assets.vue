@@ -435,17 +435,6 @@ const updateAssetChartData = () => {
           return result
         }
       },
-      toolbox: {
-        show: true,
-        feature: {
-          dataZoom: {
-            yAxisIndex: false,
-            xAxisIndex: 0
-          },
-          restore: {},
-          saveAsImage: {}
-        }
-      },
       grid: {
         left: '3%',
         right: '4%',

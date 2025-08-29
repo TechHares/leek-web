@@ -38,6 +38,18 @@
         <!-- <el-menu-item index="/asset/risk">风控管理</el-menu-item> -->  
       </el-sub-menu>
 
+      <!-- 风控 -->
+      <el-sub-menu index="risk">
+        <template #title>
+          <el-icon><Operation /></el-icon>
+          <span>风控</span>
+        </template>
+        <el-menu-item index="/risk/policies">策略信号风控</el-menu-item>
+        <el-menu-item index="/risk/position_policy">仓位主动风控</el-menu-item>
+        <!-- <el-menu-item index="/risk/events">风险事件</el-menu-item> -->
+        <el-menu-item index="/risk/logs">风控日志</el-menu-item>
+      </el-sub-menu>
+
       <!-- 数据源 -->
       <el-sub-menu index="datasource">
         <template #title>
@@ -131,6 +143,7 @@ import {
   Cpu,
   Wallet,
   Guide,
+  Operation,
   Money,
   Timer,
   Avatar,

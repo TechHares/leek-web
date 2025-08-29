@@ -139,6 +139,24 @@ const routes = [
         component: () => import('@/views/backtest/CostConfig.vue'),
         meta: { title: '费用配置' }
       },
+      {
+        path: 'risk/policies',
+        name: 'RiskPolicies',
+        component: () => import('@/views/risk/RiskPolicies.vue'),
+        meta: { title: '风控策略' }
+      },
+      {
+        path: 'risk/events',
+        name: 'RiskEvents',
+        component: () => import('@/views/risk/RiskEvents.vue'),
+        meta: { title: '风险事件' }
+      },
+      {
+        path: 'risk/logs',
+        name: 'RiskLogs',
+        component: () => import('@/views/risk/RiskLogs.vue'),
+        meta: { title: '风控日志' }
+      },
       
     ]
   },
