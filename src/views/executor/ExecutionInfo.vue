@@ -67,7 +67,7 @@
           </el-table-column>
           <el-table-column label="实际金额" align="right">
             <template #default="scope">
-              {{ formatNumber(scope.row.actual_amount, 4) }}
+              {{ scope.row.actual_amount == null ? '-' : formatNumber(scope.row.actual_amount, 4) }}
             </template>
           </el-table-column>
           <el-table-column label="订单类型">
@@ -148,18 +148,16 @@
         <el-descriptions-item label="开仓金额">{{ formatNumber(detail.open_amount, 4) }}</el-descriptions-item>
         <el-descriptions-item label="开仓比例">{{ formatNumber(detail.open_ratio * 100, 1) }}%</el-descriptions-item>
         <el-descriptions-item label="实际比例">{{ detail.actual_ratio == null ? '-' : formatNumber(detail.actual_ratio * 100, 1) + '%' }}</el-descriptions-item>
-        <el-descriptions-item label="实际金额">{{ formatNumber(detail.actual_amount, 4) }}</el-descriptions-item>
+        <el-descriptions-item label="实际金额">{{ detail.actual_amount == null ? '-' : formatNumber(detail.actual_amount, 4) }}</el-descriptions-item>
         <el-descriptions-item label="实际盈亏">
-        <template #default="scope">
-              <template v-if="detail.actual_pnl !== null && detail.actual_pnl !== undefined">
-                <span :class="detail.actual_pnl >= 0 ? 'text-success' : 'text-danger'">
-                  {{ detail.actual_pnl > 0 ? "+" : "" }}{{ formatNumber(detail.actual_pnl, 12) }}
-                </span>
-              </template>
-              <template v-else>
-                -
-              </template>
-            </template>
+          <template v-if="detail.actual_pnl !== null && detail.actual_pnl !== undefined">
+            <span :class="detail.actual_pnl >= 0 ? 'text-success' : 'text-danger'">
+              {{ detail.actual_pnl > 0 ? "+" : "" }}{{ formatNumber(detail.actual_pnl, 12) }}
+            </span>
+          </template>
+          <template v-else>
+            -
+          </template>
         </el-descriptions-item>
         <el-descriptions-item label="杠杆">{{ formatNumber(detail.leverage, 2) }}x</el-descriptions-item>
         <el-descriptions-item label="订单类型">
