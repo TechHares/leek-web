@@ -88,6 +88,11 @@
               {{ scope.row.symbol }} - {{ scope.row.quote_currency }}
             </template>
           </el-table-column>
+          <el-table-column label="策略" align="center">
+            <template #default="scope">
+              {{ scope.row.instance_name || '-' }}
+            </template>
+          </el-table-column>
           <el-table-column label="方向/杠杆" align="center">
             <template #default="scope">
               <el-tag :type="getPositionSideTag(scope.row.side)">
@@ -184,7 +189,7 @@
     >
       <el-descriptions :column="2" border>
         <el-descriptions-item label="ID">{{ detail.id }}</el-descriptions-item>
-        <el-descriptions-item label="策略ID">{{ detail.strategy_id }}</el-descriptions-item>
+        <el-descriptions-item label="策略">{{ detail.instance_name }}({{ detail.strategy_id }})</el-descriptions-item>
         <el-descriptions-item label="策略实例">{{ detail.strategy_instance_id }}</el-descriptions-item>
         <el-descriptions-item label="交易标的">{{ detail.symbol }} - {{ detail.quote_currency }}</el-descriptions-item>
         <el-descriptions-item label="产品类型"><el-tag type="success">{{ assetTypeDesc(detail.asset_type) }}</el-tag><el-tag type="info">{{ insTypeDesc(detail.ins_type) }}</el-tag></el-descriptions-item>
