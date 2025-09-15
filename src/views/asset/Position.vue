@@ -5,12 +5,23 @@
         <div class="header-bar">
           <div class="table-actions">
             <div class="left-actions">
-              <el-input
-                v-model="listQuery.strategy_id"
-                placeholder="策略ID"
-                style="width: 200px;"
+              <el-select
+                v-model="listQuery.strategy_ids"
+                placeholder="选择策略"
+                clearable
+                filterable
+                multiple
+                collapse-tags
+                style="width: 260px;"
                 class="filter-item"
-              />
+              >
+                <el-option
+                  v-for="item in strategyOptions"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
               <el-input
                 v-model="listQuery.symbol"
                 placeholder="交易标的"
@@ -317,6 +328,7 @@
 
 <script>
 import { getPositions, getPosition, closePosition } from '@/api/position'
+import { getStrategies } from '@/api/strategy'
 import { View, Close } from '@element-plus/icons-vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { formatNumber, filterEmptyParams } from '@/utils/format'
@@ -332,7 +344,7 @@ export default {
       listQuery: {
         page: 1,
         size: 20,
-        strategy_id: undefined,
+        strategy_ids: [],
         symbol: undefined,
         is_closed: undefined,
         ins_type: undefined,
@@ -340,11 +352,13 @@ export default {
 
       },
       detailDialogVisible: false,
-      detail: {}
+      detail: {},
+      strategyOptions: []
     }
   },
   created() {
     this.getList()
+    this.getStrategies()
   },
   methods: {
     insTypeDesc,
@@ -356,6 +370,11 @@ export default {
       try {
         // 过滤掉空字符串，避免后端解析错误
         const queryParams = filterEmptyParams(this.listQuery)
+        if (Array.isArray(queryParams.strategy_ids) && queryParams.strategy_ids.length > 0) {
+          queryParams.strategy_ids = queryParams.strategy_ids.join(',')
+        } else {
+          queryParams.strategy_ids = undefined
+        }
         
         const { data } = await getPositions(queryParams)
         this.list = data.items
@@ -365,6 +384,14 @@ export default {
         this.$message.error('获取仓位列表失败')
       }
       this.listLoading = false
+    },
+    async getStrategies() {
+      try {
+        const { data } = await getStrategies()
+        this.strategyOptions = data
+      } catch (error) {
+        console.error('获取策略列表失败:', error)
+      }
     },
     handleFilter() {
       // 重置页码到第一页

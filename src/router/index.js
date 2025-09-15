@@ -71,13 +71,13 @@ const routes = [
         path: 'executor/exe_order',
         name: 'ExecutorExeOrder',
         component: () => import('@/views/executor/ExecutionInfo.vue'),
-        meta: { title: '执行器订单' }
+        meta: { title: '交易器订单' }
       },
       {
         path: 'executor/order',
         name: 'ExecutorOrder',
         component: () => import('@/views/executor/Order.vue'),
-        meta: { title: '订单管理' }
+        meta: { title: '交易所订单' }
       },
       {
         path: 'executor/config',

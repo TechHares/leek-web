@@ -451,90 +451,7 @@
             </el-form-item>
           </div>
         </template>
-        <el-form-item label="出入场配置">
-          <el-link type="primary" @click="toggleEntryExitCollapse" style="margin-left: 8px;">
-            {{ entryExitCollapse.includes('entry_exit') ? '收起出入场配置' : '展开出入场配置' }}
-          </el-link>
-        </el-form-item>
-        <template v-if="entryExitCollapse.includes('entry_exit')">
-          <el-form-item label="入场策略" prop="enter_strategy_class_name">
-            <el-select
-              v-model="temp.enter_strategy_class_name"
-              @focus="collapsePositionConfig"
-              filterable
-              clearable
-              @change="handleEnterStrategyTemplateChange"
-            >
-              <el-option
-                v-for="item in enterStrategyOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              >
-                <span>{{ item.label }}</span>
-                <el-tag
-                  v-if="item.tag"
-                  size="small"
-                  type="info"
-                  effect="plain"
-                  style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
-                >
-                  {{ item.tag }}
-                </el-tag>
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="入场参数" prop="enter_strategy_config">
-            <div class="param-scroll-area">
-              <DynamicForm
-                v-if="selectedEnterStrategyTemplate && Array.isArray(selectedEnterStrategyTemplate.parameters) && selectedEnterStrategyTemplate.parameters.length > 0 && temp.enter_strategy_class_name"
-                :fields="selectedEnterStrategyTemplate.parameters"
-                v-model:modelValue="temp.enter_strategy_config"
-                :key="enterStrategyParamFormKey"
-              />
-              <div v-else style="color: #b0b3b8;">无需参数</div>
-            </div>
-          </el-form-item>
-          <el-form-item label="出场策略" prop="exit_strategy_class_name">
-            <el-select
-              v-model="temp.exit_strategy_class_name"
-              @focus="collapsePositionConfig"
-              filterable
-              clearable
-              @change="handleExitStrategyTemplateChange"
-            >
-              <el-option
-                v-for="item in exitStrategyOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              >
-                <span>{{ item.label }}</span>
-                <el-tag
-                  v-if="item.tag"
-                  size="small"
-                  type="info"
-                  effect="plain"
-                  style="margin-left: 6px; font-size: 12px; color: #b0b3b8; border-color: #e0e0e0;"
-                >
-                  {{ item.tag }}
-                </el-tag>
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="出场参数" prop="exit_strategy_config">
-            <div class="param-scroll-area">
-              <DynamicForm
-                v-if="selectedExitStrategyTemplate && Array.isArray(selectedExitStrategyTemplate.parameters) && selectedExitStrategyTemplate.parameters.length > 0 && temp.exit_strategy_class_name"
-                :fields="selectedExitStrategyTemplate.parameters"
-                v-model:modelValue="temp.exit_strategy_config"
-                :key="exitStrategyParamFormKey"
-              />
-              <div v-else style="color: #b0b3b8;">无需参数</div>
-            </div>
-          </el-form-item>
-        </template>
-        <el-form-item label="风控" prop="risk_policies">
+        <el-form-item label="子策略" prop="risk_policies">
           <el-row :gutter="24" style="width: 100%;">
             <!-- 策略列表 -->
             <el-col :span="7" style="min-width: 200px;">
@@ -620,11 +537,7 @@
 
 <script>
 import { getStrategies, createStrategy, updateStrategy, deleteStrategy, runStrategy, updateStrategyState, restartStrategy as restartStrategyAPI,
-  getEnterStrategies, 
-  getExitStrategies,
   getStrategyTemplates,
-  getEnterStrategyTemplates,
-  getExitStrategyTemplates,
   getStrategyPolicyTemplates,
   getStrategyFabricatorTemplates } from '@/api/strategy'
 import { getDataSources, getDataSourceTemplates, fetchDataSourceParameters } from '@/api/datasource'
@@ -660,10 +573,6 @@ export default {
         data_source_config: null,
         data_source_params: {},
         position_config: null,
-        enter_strategy_class_name: '',
-        enter_strategy_config: {},
-        exit_strategy_class_name: '',
-        exit_strategy_config: {},
         risk_policies: [],
         selectedDataSourceCls: [],
         info_fabricator_configs: [],
@@ -675,29 +584,19 @@ export default {
           { type: 'array', required: true, message: '请选择数据源', trigger: 'change' }
         ],
         position_config: [{ required: true, message: '请选择仓位配置', trigger: 'change' }],
-        enter_strategy_class_name: [{ required: true, message: '请选择入场策略', trigger: 'change', type: 'string' }],
-        exit_strategy_class_name: [{ required: true, message: '请选择出场策略', trigger: 'change', type: 'string' }]
+        
       },
       dataSources: [],
       dataSourceTemplates: [],
       positionConfigs: [],
       currentDataSource: null,
-      enterStrategies: [],
-      exitStrategies: [],
       riskPolicies: [],
       positionCollapse: [],
       strategyOptions: [],
-      enterStrategyOptions: [],
-      exitStrategyOptions: [],
       enabledExecutors: [],
       selectedStrategyTemplate: null,
       strategyParamFormKey: 0,
-      selectedEnterStrategyTemplate: null,
-      enterStrategyParamFormKey: 0,
-      selectedExitStrategyTemplate: null,
-      exitStrategyParamFormKey: 0,
-      rawEnterStrategyTemplates: [],
-      rawExitStrategyTemplates: [],
+      rawStrategyTemplates: [],
       rawStrategyTemplates: [],
       riskPolicyTemplates: [],
       selectedRiskPolicyIdx: 0,
@@ -706,7 +605,6 @@ export default {
       infoFabricatorCollapse: [],
       infoFabricatorTemplates: [],
       selectedInfoFabricatorIdx: 0,
-      entryExitCollapse: [],
       dataDialogVisible: false,
       currentStrategyData: null
     }
@@ -777,8 +675,6 @@ export default {
   created() {
     this.getList()
     this.fetchStrategies()
-    this.fetchEnterStrategies()
-    this.fetchExitStrategies()
     this.fetchEnabledExecutors()
     this.fetchRiskPolicyTemplates()
     this.getDataSources()
@@ -830,22 +726,6 @@ export default {
         this.$message.error('获取数据源列表失败')
       }
     },
-    async getEnterStrategies() {
-      try {
-        const { data } = await getEnterStrategies()
-        this.enterStrategies = data
-      } catch (error) {
-        this.$message.error('获取入场策略列表失败')
-      }
-    },
-    async getExitStrategies() {
-      try {
-        const { data } = await getExitStrategies()
-        this.exitStrategies = data
-      } catch (error) {
-        this.$message.error('获取出场策略列表失败')
-      }
-    },
     async getRiskPolicies() {
       try {
         const { data } = await getRiskPolicies()
@@ -868,10 +748,6 @@ export default {
         data_source_config: null,
         data_source_params: {},
         position_config: null,
-        enter_strategy_class_name: '',
-        enter_strategy_config: {},
-        exit_strategy_class_name: '',
-        exit_strategy_config: {},
         risk_policies: [],
         selectedDataSourceCls: [],
         info_fabricator_configs: [],
@@ -888,16 +764,6 @@ export default {
       this.dialogStatus = 'create'
       this.dialogFormVisible = true
       this.fetchStrategies()
-      const defaultEnter = this.enterStrategyOptions.find(i => i.value === 'leek_core.sub_strategy.base|EnterStrategy')
-      if (defaultEnter) {
-        this.temp.enter_strategy_class_name = defaultEnter.value || ''
-        this.handleEnterStrategyTemplateChange(defaultEnter.value)
-      }
-      const defaultExit = this.exitStrategyOptions.find(i => i.value === 'leek_core.sub_strategy.base|ExitStrategy')
-      if (defaultExit) {
-        this.temp.exit_strategy_class_name = defaultExit.value || ''
-        this.handleExitStrategyTemplateChange(defaultExit.value)
-      }
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
@@ -928,7 +794,7 @@ export default {
                 config: (this.temp.data_source_params && this.temp.data_source_params[ds.id]) || {}
               }
             })
-            // 组装风控参数
+            // 组装子策略参数
             tempToSubmit.risk_policies = (this.riskPolicyTemplates || [])
               .filter((tpl, idx) => this.isRiskPolicyEnabled(tpl.name))
               .map(tpl => ({
@@ -967,10 +833,7 @@ export default {
         strategy_params: row.params || {},
         selectedDataSourceCls: row.data_source_config.map(ds => ds.id),
         position_config: row.position_config || null,
-        enter_strategy_class_name: row.enter_strategy_class_name,
-        enter_strategy_config: row.enter_strategy_config || {},
-        exit_strategy_class_name: row.exit_strategy_class_name,
-        exit_strategy_config: row.exit_strategy_config || {},
+        
         risk_policies: [],
         info_fabricator_configs: Array.isArray(row.info_fabricator_configs)
           ? row.info_fabricator_configs.map(cfg => ({
@@ -992,7 +855,7 @@ export default {
           this.temp.data_source_params[ds.id] = ds.config || {}
         })
       }
-      // 风控回显
+      // 子策略回显
       if (Array.isArray(row.risk_policies)) {
         this.riskPolicies = (this.riskPolicyTemplates || []).map(tpl => {
           const found = row.risk_policies.find(rp => rp.class_name === tpl.cls)
@@ -1006,8 +869,6 @@ export default {
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
       this.$nextTick(() => {
-        this.fetchEnterStrategies()
-        this.fetchExitStrategies()
         this.$refs['dataForm'].clearValidate()
       })
     },
@@ -1039,7 +900,7 @@ export default {
                 config: (this.temp.data_source_params && this.temp.data_source_params[ds.id]) || {}
               }
             })
-            // 组装风控参数
+            // 组装子策略参数
             tempToSubmit.risk_policies = (this.riskPolicyTemplates || [])
               .filter((tpl, idx) => this.isRiskPolicyEnabled(tpl.name))
               .map(tpl => ({
@@ -1106,26 +967,7 @@ export default {
         desc: i.desc
       }))
     },
-    async fetchEnterStrategies() {
-      const res = await getEnterStrategyTemplates()
-      this.rawEnterStrategyTemplates = res.data
-      this.enterStrategyOptions = res.data.map(i => ({ label: i.name, value: i.cls, tag: i.tag }))
-      const defaultEnter = this.enterStrategyOptions.find(i => i.value === 'leek_core.sub_strategy.base|EnterStrategy')
-      if (defaultEnter && !this.temp.enter_strategy_class_name) {
-        this.temp.enter_strategy_class_name = defaultEnter.value
-        this.handleEnterStrategyTemplateChange(defaultEnter.value)
-      }
-    },
-    async fetchExitStrategies() {
-      const res = await getExitStrategyTemplates()
-      this.rawExitStrategyTemplates = res.data
-      this.exitStrategyOptions = res.data.map(i => ({ label: i.name, value: i.cls, tag: i.tag }))
-      const defaultExit = this.exitStrategyOptions.find(i => i.value === 'leek_core.sub_strategy.base|ExitStrategy')
-      if (defaultExit && !this.temp.exit_strategy_class_name) {
-        this.temp.exit_strategy_class_name = defaultExit.value
-        this.handleExitStrategyTemplateChange(defaultExit.value)
-      }
-    },
+    
     async fetchEnabledExecutors() {
       try {
         const { data } = await getExecutors({ enable: true, limit: 0 })
@@ -1166,20 +1008,7 @@ export default {
       this.selectedStrategyTemplate = this.rawStrategyTemplates.find(tpl => tpl.cls === value)
       this.strategyParamFormKey++
     },
-    handleEnterStrategyTemplateChange(value) {
-      if (typeof value !== 'string') {
-        value = ''
-      }
-      this.selectedEnterStrategyTemplate = this.rawEnterStrategyTemplates.find(tpl => tpl.cls === value)
-      this.enterStrategyParamFormKey++
-    },
-    handleExitStrategyTemplateChange(value) {
-      if (typeof value !== 'string') {
-        value = ''
-      }
-      this.selectedExitStrategyTemplate = this.rawExitStrategyTemplates.find(tpl => tpl.cls === value)
-      this.exitStrategyParamFormKey++
-    },
+    
     async fetchRiskPolicyTemplates() {
       const { data } = await getStrategyPolicyTemplates()
       this.riskPolicyTemplates = data
@@ -1270,13 +1099,7 @@ export default {
       const found = this.infoFabricatorTemplates.find(p => p.name === cfg.name)
       return found ? found.name : (cfg.class_name || '未知处理器')
     },
-    toggleEntryExitCollapse() {
-      if (this.entryExitCollapse.includes('entry_exit')) {
-        this.entryExitCollapse = []
-      } else {
-        this.entryExitCollapse = ['entry_exit']
-      }
-    },
+    
     isInfoFabricatorEnabled(cls) {
       const found = (this.temp.info_fabricator_configs || []).find(p => p.class_name === cls)
       return found ? found.enabled : false
@@ -1310,7 +1133,7 @@ export default {
             continue
           }
           
-          const dsParams = this.temp.data_source_params[dsId] || {}
+          const dsParams = this.temp.data_source_params[ds.id] || {}
           
           // 检查必填参数
           for (const param of parameters) {

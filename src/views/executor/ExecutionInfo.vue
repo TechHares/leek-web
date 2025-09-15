@@ -6,17 +6,28 @@
           <div class="table-actions">
             <div class="left-actions">
               <el-input
-                v-model="listQuery.signal_id"
-                placeholder="信号ID"
+                v-model="listQuery.keyword"
+                placeholder="信号ID/ID"
                 style="width: 180px;"
                 class="filter-item"
               />
-              <el-input
-                v-model="listQuery.strategy_id"
-                placeholder="策略ID"
-                style="width: 120px;"
+              <el-select
+                v-model="listQuery.strategy_ids"
+                placeholder="选择策略"
+                clearable
+                filterable
+                multiple
+                collapse-tags
+                style="width: 240px;"
                 class="filter-item"
-              />
+              >
+                <el-option
+                  v-for="item in strategyOptions"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
               <el-button type="primary" @click="handleFilter" class="filter-item">查询</el-button>
             </div>
           </div>
@@ -143,7 +154,7 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="ID">{{ detail.id }}</el-descriptions-item>
         <el-descriptions-item label="信号ID">{{ detail.signal_id }}</el-descriptions-item>
-        <el-descriptions-item label="策略">{{ detail.strategy_name }} ({{ detail.strategy_id }} @ {{ detail.strategy_instant_id }})</el-descriptions-item>
+        <el-descriptions-item label="策略">{{ detail.strategy_name }} ({{ detail.strategy_id }} @ {{ detail.strategy_instance_id }})</el-descriptions-item>
         <el-descriptions-item label="目标执行器ID">{{ detail.target_executor_id }}</el-descriptions-item>
         <el-descriptions-item label="开仓金额">{{ formatNumber(detail.open_amount, 4) }}</el-descriptions-item>
         <el-descriptions-item label="开仓比例">{{ formatNumber(detail.open_ratio * 100, 1) }}%</el-descriptions-item>
@@ -265,6 +276,7 @@
 
 <script>
 import { getExecutionOrders } from '@/api/executor'
+import { getStrategies } from '@/api/strategy'
 import { View } from '@element-plus/icons-vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { formatNumber, filterEmptyParams } from '@/utils/format'
@@ -281,12 +293,13 @@ export default {
       listQuery: {
         page: 1,
         size: 20,
-        signal_id: undefined,
-        strategy_id: undefined,
+        keyword: undefined,
+        strategy_ids: [],
         project_id: undefined
       },
       detailDialogVisible: false,
-      detail: {}
+      detail: {},
+      strategyOptions: []
     }
   },
   methods: {
@@ -296,6 +309,11 @@ export default {
       try {
         // 过滤掉空字符串，避免后端解析错误
         const queryParams = filterEmptyParams(this.listQuery)
+        if (Array.isArray(queryParams.strategy_ids) && queryParams.strategy_ids.length > 0) {
+          queryParams.strategy_ids = queryParams.strategy_ids.join(',')
+        } else {
+          queryParams.strategy_ids = undefined
+        }
         
         const { data } = await getExecutionOrders(queryParams)
         this.list = data.items
@@ -305,6 +323,14 @@ export default {
         this.$message.error('获取执行信息列表失败')
       }
       this.listLoading = false
+    },
+    async getStrategies() {
+      try {
+        const { data } = await getStrategies()
+        this.strategyOptions = data
+      } catch (error) {
+        console.error('获取策略列表失败:', error)
+      }
     },
     handleFilter() {
       // 重置页码到第一页
@@ -331,6 +357,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getStrategies()
   }
 }
 </script>

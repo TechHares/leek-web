@@ -61,15 +61,15 @@
           </el-table-column>
           <el-table-column label="总收益率" align="right" width="120">
             <template #default="scope">
-              <span :class="(scope.row.total_return ?? getTotalReturn(scope.row)) >= 0 ? 'text-success' : 'text-danger'">
-                {{ (scope.row.total_return ?? getTotalReturn(scope.row)) >= 0 ? '+' : '' }}{{ formatPercent(scope.row.total_return ?? getTotalReturn(scope.row)) }}
+              <span :class="getTrendClass(scope.row.total_return ?? getTotalReturn(scope.row))">
+                {{ formatSignedPercent(scope.row.total_return ?? getTotalReturn(scope.row)) }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="年化收益率" align="right" width="120">
             <template #default="scope">
-              <span :class="(scope.row.annual_return ?? getAnnualReturn(scope.row)) >= 0 ? 'text-success' : 'text-danger'">
-                {{ (scope.row.annual_return ?? getAnnualReturn(scope.row)) >= 0 ? '+' : '' }}{{ formatPercent(scope.row.annual_return ?? getAnnualReturn(scope.row)) }}
+              <span :class="getTrendClass(scope.row.annual_return ?? getAnnualReturn(scope.row))">
+                {{ formatSignedPercent(scope.row.annual_return ?? getAnnualReturn(scope.row)) }}
               </span>
             </template>
           </el-table-column>
@@ -137,15 +137,13 @@
             </el-descriptions-item>
             <el-descriptions-item label="进度">{{ formatNumber(currentRecord.progress * 100, 0) }}%</el-descriptions-item>
             <el-descriptions-item label="总收益率">
-              <span :class="(currentRecord.total_return ?? getTotalReturn(currentRecord)) >= 0 ? 'text-success' : 'text-danger'">
-                {{ (currentRecord.total_return ?? getTotalReturn(currentRecord)) >= 0 ? '+' : '' }}
-                {{ formatPercent(currentRecord.total_return ?? getTotalReturn(currentRecord)) }}
+              <span :class="getTrendClass(currentRecord.total_return ?? getTotalReturn(currentRecord))">
+                {{ formatSignedPercent(currentRecord.total_return ?? getTotalReturn(currentRecord)) }}
               </span>
             </el-descriptions-item>
             <el-descriptions-item label="年化收益率">
-              <span :class="(currentRecord.annual_return ?? getAnnualReturn(currentRecord)) >= 0 ? 'text-success' : 'text-danger'">
-                {{ (currentRecord.annual_return ?? getAnnualReturn(currentRecord)) >= 0 ? '+' : '' }}
-                {{ formatPercent(currentRecord.annual_return ?? getAnnualReturn(currentRecord)) }}
+              <span :class="getTrendClass(currentRecord.annual_return ?? getAnnualReturn(currentRecord))">
+                {{ formatSignedPercent(currentRecord.annual_return ?? getAnnualReturn(currentRecord)) }}
               </span>
             </el-descriptions-item>
             <el-descriptions-item label="回测周期">{{ formatDate(currentRecord.start) }} ~ {{ formatDate(currentRecord.end) }}</el-descriptions-item>
@@ -340,6 +338,19 @@ export default {
     formatPercent(value) {
       if (value === undefined || value === null) return '-'
       return (Number(value) * 100).toFixed(2) + '%'
+    },
+    formatSignedPercent(value) {
+      const num = Number(value)
+      if (value === undefined || value === null || !Number.isFinite(num)) return '-'
+      const formatted = (num * 100).toFixed(2) + '%'
+      return num > 0 ? ('+' + formatted) : formatted
+    },
+    getTrendClass(value) {
+      const num = Number(value)
+      if (value === undefined || value === null || !Number.isFinite(num)) return undefined
+      if (num > 0) return 'text-success'
+      if (num < 0) return 'text-danger'
+      return undefined
     },
     getAggValue(row, field) {
       // 优先使用后端冗余聚合字段；若没有，则从 summary 求平均作为兜底

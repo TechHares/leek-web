@@ -148,7 +148,35 @@
         </div>
       </el-form-item>
 
-      <el-divider content-position="left">风控</el-divider>
+      <el-form-item label="参数空间" v-if="form.enable_optim">
+        <div class="param-space">
+          <div v-for="(row, idx) in form.param_items" :key="idx" class="param-row">
+            <el-input :model-value="getParamLabel(row.name)" disabled style="width: 200px;" />
+            <el-select v-model="row.mode" style="width: 120px; margin-left: 8px;">
+              <el-option label="固定值" value="value" />
+              <el-option label="范围" value="range" />
+              <el-option label="枚举" value="choices" />
+            </el-select>
+            <template v-if="row.mode === 'value'">
+              <el-input v-model="row.value" placeholder="值" style="width: 200px; margin-left: 8px;" />
+            </template>
+            <template v-else-if="row.mode === 'range'">
+              <el-input v-model="row.min" placeholder="最小" style="width: 120px; margin-left: 8px;" />
+              <el-input v-model="row.max" placeholder="最大" style="width: 120px; margin-left: 8px;" />
+              <el-input v-model="row.step" placeholder="步长" style="width: 120px; margin-left: 8px;" />
+            </template>
+            <template v-else>
+              <el-select v-model="row.choices" multiple filterable allow-create default-first-option placeholder="输入后回车添加" style="width: 360px; margin-left: 8px;" />
+            </template>
+          </div>
+        </div>
+        <div class="mini-summary" style="margin-top:8px;">
+          参数组合：{{ paramComboCount }} ｜ 训练窗口：{{ windowCount }} ｜ 符号×周期：{{ symbolTfCount }} ｜ CV：{{ cvFactor }}
+          <el-tag :type="riskTagType" size="small" style="margin-left:8px;">预估评估数量：{{ totalTrainJobs }}</el-tag>
+        </div>
+      </el-form-item>
+
+      <el-divider content-position="left">子策略</el-divider>
       <el-form-item>
         <el-row :gutter="24" style="width: 100%;">
           <el-col :span="7" style="min-width: 200px;">
@@ -194,34 +222,6 @@
             <div v-else style="color: #b0b3b8; padding: 24px;">请选择左侧策略</div>
           </el-col>
         </el-row>
-      </el-form-item>
-
-      <el-form-item label="参数空间" v-if="form.enable_optim">
-        <div class="param-space">
-          <div v-for="(row, idx) in form.param_items" :key="idx" class="param-row">
-            <el-input :model-value="getParamLabel(row.name)" disabled style="width: 200px;" />
-            <el-select v-model="row.mode" style="width: 120px; margin-left: 8px;">
-              <el-option label="固定值" value="value" />
-              <el-option label="范围" value="range" />
-              <el-option label="枚举" value="choices" />
-            </el-select>
-            <template v-if="row.mode === 'value'">
-              <el-input v-model="row.value" placeholder="值" style="width: 200px; margin-left: 8px;" />
-            </template>
-            <template v-else-if="row.mode === 'range'">
-              <el-input v-model="row.min" placeholder="最小" style="width: 120px; margin-left: 8px;" />
-              <el-input v-model="row.max" placeholder="最大" style="width: 120px; margin-left: 8px;" />
-              <el-input v-model="row.step" placeholder="步长" style="width: 120px; margin-left: 8px;" />
-            </template>
-            <template v-else>
-              <el-select v-model="row.choices" multiple filterable allow-create default-first-option placeholder="输入后回车添加" style="width: 360px; margin-left: 8px;" />
-            </template>
-          </div>
-        </div>
-        <div class="mini-summary" style="margin-top:8px;">
-          参数组合：{{ paramComboCount }} ｜ 训练窗口：{{ windowCount }} ｜ 符号×周期：{{ symbolTfCount }} ｜ CV：{{ cvFactor }}
-          <el-tag :type="riskTagType" size="small" style="margin-left:8px;">预估评估数量：{{ totalTrainJobs }}</el-tag>
-        </div>
       </el-form-item>
 
       <el-divider content-position="left">稳健性阈值</el-divider>

@@ -45,30 +45,14 @@ export function runStrategy(id) {
   return apiClient.post(`/strategies/${id}/run`)
 }
 
-// 获取入场策略列表
-export function getEnterStrategies() {
-  return apiClient.get('/strategies/enter')
-}
-
-// 获取出场策略列表
-export function getExitStrategies() {
-  return apiClient.get('/strategies/exit')
-}
+// 进出场子策略接口已移除
 
 // 获取策略模板列表
 export function getStrategyTemplates(params) {
   return apiClient.get('/templates/strategy', { params })
 }
 
-// 获取入场策略模板列表
-export function getEnterStrategyTemplates(params) {
-  return apiClient.get('/templates/strategy/enter', { params })
-}
-
-// 获取出场策略模板列表
-export function getExitStrategyTemplates(params) {
-  return apiClient.get('/templates/strategy/exit', { params })
-}
+// 进出场子策略模板接口已移除
 
 // 获取风控策略模板列表
 export function getStrategyPolicyTemplates(params) {

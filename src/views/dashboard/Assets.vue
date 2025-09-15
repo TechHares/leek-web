@@ -379,15 +379,25 @@ const updateAssetChartData = () => {
     
     const xAxisData = sortedData.map(item => formatDateTime(item.snapshot_time))
     
-    // 左轴数据：收益
+    // 左轴数据：收益（从0开始：减去首点 (total_amount - principal) 偏移）
+    const firstTotal = parseFloat(sortedData[0].total_amount)
+    const firstPrincipal = parseFloat(sortedData[0].principal ?? 0)
+    const safeFirstTotal = isNaN(firstTotal) ? 0 : firstTotal
+    const safeFirstPrincipal = isNaN(firstPrincipal) ? 0 : firstPrincipal
+    const baselineOffset = safeFirstTotal - safeFirstPrincipal
+    
     const seriesData = sortedData.map(item => {
+      const principal = parseFloat(item.principal ?? 0)
+      const currentAmount = parseFloat(item.total_amount)
+      const safePrincipal = isNaN(principal) ? 0 : principal
+      const safeCurrent = isNaN(currentAmount) ? 0 : currentAmount
+      const numerator = (safeCurrent - safePrincipal) - baselineOffset
       if (dataType.value === 'rate') {
-        const firstAmount = parseFloat(sortedData[0].total_amount)
-        const currentAmount = parseFloat(item.total_amount)
-        const rate = ((currentAmount - firstAmount) / firstAmount * 100)
+        const denominator = (safePrincipal && safePrincipal !== 0) ? safePrincipal : safeFirstTotal
+        const rate = denominator ? (numerator / denominator) * 100 : 0
         return isNaN(rate) ? 0 : parseFloat(rate.toFixed(4))
       } else {
-        const amount = parseFloat(item.total_amount - sortedData[0].total_amount)
+        const amount = numerator
         return isNaN(amount) ? 0 : amount
       }
     })

@@ -6,17 +6,28 @@
           <div class="table-actions">
             <div class="left-actions">
               <el-input
-                v-model="listQuery.position_id"
-                placeholder="仓位ID"
-                style="width: 180px;"
+                v-model="listQuery.keyword"
+                placeholder="ID/仓位ID/信号ID/市场订单ID/交易器ID"
+                style="width: 260px;"
                 class="filter-item"
               />
-              <el-input
-                v-model="listQuery.strategy_id"
-                placeholder="策略ID"
-                style="width: 120px;"
+              <el-select
+                v-model="listQuery.strategy_ids"
+                placeholder="选择策略"
+                clearable
+                filterable
+                multiple
+                collapse-tags
+                style="width: 240px;"
                 class="filter-item"
-              />
+              >
+                <el-option
+                  v-for="item in strategyOptions"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
               <el-select
                 v-model="listQuery.order_status"
                 placeholder="订单状态"
@@ -53,18 +64,6 @@
                 <el-option label="真仓位" :value="false" />
                 <el-option label="虚拟仓位" :value="true" />
               </el-select>
-              <el-input
-                v-model="listQuery.market_order_id"
-                placeholder="市场订单ID"
-                style="width: 140px;"
-                class="filter-item"
-              />
-              <el-input
-                v-model="listQuery.executor_id"
-                placeholder="交易器ID"
-                style="width: 120px;"
-                class="filter-item"
-              />
               <el-button type="primary" @click="handleFilter" class="filter-item">查询</el-button>
             </div>
           </div>
@@ -240,6 +239,7 @@
 
 <script>
 import { getOrders, getOrder } from '@/api/executor'
+import { getStrategies } from '@/api/strategy'
 import { View } from '@element-plus/icons-vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { formatNumber, filterEmptyParams } from '@/utils/format'
@@ -256,17 +256,16 @@ export default {
       listQuery: {
         page: 1,
         size: 20,
-        position_id: undefined,
-        strategy_id: undefined,
+        keyword: undefined,
+        strategy_ids: [],
         order_status: undefined,
         is_open: undefined,
         is_fake: false,
-        market_order_id: undefined,
-        executor_id: undefined,
         project_id: undefined
       },
       dialogVisible: false,
-      currentOrder: {}
+      currentOrder: {},
+      strategyOptions: []
     }
   },
   methods: {
@@ -275,6 +274,11 @@ export default {
       try {
         // 过滤掉空字符串，避免后端解析错误
         const queryParams = filterEmptyParams(this.listQuery)
+        if (Array.isArray(queryParams.strategy_ids) && queryParams.strategy_ids.length > 0) {
+          queryParams.strategy_ids = queryParams.strategy_ids.join(',')
+        } else {
+          queryParams.strategy_ids = undefined
+        }
         
         const { data } = await getOrders(queryParams)
         this.list = data.items
@@ -284,6 +288,14 @@ export default {
         this.$message.error('获取订单列表失败')
       }
       this.listLoading = false
+    },
+    async getStrategies() {
+      try {
+        const { data } = await getStrategies()
+        this.strategyOptions = data
+      } catch (error) {
+        console.error('获取策略列表失败:', error)
+      }
     },
     handleFilter() {
       // 重置页码到第一页
@@ -325,6 +337,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getStrategies()
   }
 }
 </script>
