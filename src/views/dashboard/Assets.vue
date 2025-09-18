@@ -231,7 +231,7 @@ const performanceMetrics = ref(null)
 const periodComparison = ref(null)
 const timeRangeInfo = ref(null)
 
-// 年化文案（< 365 天显示“估算年化收益率”）
+// 年化文案（根据时间周期显示不同标题）
 const annualizedTitle = computed(() => {
   try {
     let start = null, end = null
@@ -244,16 +244,29 @@ const annualizedTitle = computed(() => {
     }
     if (!start || !end) return '年化收益率'
     const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / (24 * 3600 * 1000)))
-    return days < 365 ? '估算年化收益率' : '年化收益率'
+    
+    if (days < 7) {
+      return '区间收益率'
+    } else if (days < 30) {
+      return '估算年化收益率'
+    } else if (days < 365) {
+      return '估算年化收益率'
+    } else {
+      return '年化收益率'
+    }
   } catch (e) {
     return '年化收益率'
   }
 })
 
 const annualizedTooltip = computed(() => {
-  return annualizedTitle.value === '估算年化收益率'
-    ? '估算年化收益率，按当前区间收益外推到一年'
-    : '年化收益率，反映投资回报的年化水平'
+  if (annualizedTitle.value === '区间收益率') {
+    return '区间收益率，显示选定时间范围内的实际收益率'
+  } else if (annualizedTitle.value === '估算年化收益率') {
+    return '估算年化收益率，按当前区间收益外推到一年'
+  } else {
+    return '年化收益率，反映投资回报的年化水平'
+  }
 })
 
 // 时间范围处理
