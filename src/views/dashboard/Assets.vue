@@ -393,7 +393,7 @@ const updateAssetChartData = () => {
       const safeCurrent = isNaN(currentAmount) ? 0 : currentAmount
       const numerator = (safeCurrent - safePrincipal) - baselineOffset
       if (dataType.value === 'rate') {
-        const denominator = (safePrincipal && safePrincipal !== 0) ? safePrincipal : safeFirstTotal
+        const denominator = safeFirstTotal 
         const rate = denominator ? (numerator / denominator) * 100 : 0
         return isNaN(rate) ? 0 : parseFloat(rate.toFixed(4))
       } else {
