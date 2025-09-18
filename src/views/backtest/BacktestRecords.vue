@@ -98,7 +98,7 @@
                   <el-icon><View /></el-icon>
                 </el-button>
               </el-tooltip>
-              <el-tooltip content="查看回测" placement="top">
+              <el-tooltip content="查看回测" placement="top" v-if="scope.row.status === 'completed'">
                 <el-button size="small" type="primary" @click="openDetailDialog(scope.row)" circle>
                   <el-icon><DataAnalysis /></el-icon>
                 </el-button>

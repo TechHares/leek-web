@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visibleInner" :title="`回测详情 #${task?.id || ''}`" width="90%" top="4vh" destroy-on-close :before-close="onClose">
+  <el-dialog v-model="visibleInner" :title="`回测结果 #${task?.id || ''}`" width="90%" top="4vh" destroy-on-close :before-close="onClose">
     <div v-loading="loading">
       <el-tabs v-model="active">
         <el-tab-pane label="概览" name="overview">
@@ -142,9 +142,7 @@
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane label="摘要" name="summary">
-          <pre class="json-pre">{{ pretty(task.summary) }}</pre>
-        </el-tab-pane>
+        <!-- 摘要页签移除：避免展示原始 JSON，聚焦可视化分析 -->
       </el-tabs>
     </div>
   </el-dialog>
