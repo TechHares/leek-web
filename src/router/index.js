@@ -123,8 +123,8 @@ const routes = [
       },
       {
         path: 'backtest/records',
-        name: 'BacktestRecords',
-        component: () => import('@/views/backtest/BacktestRecords.vue'),
+        name: 'BacktestList',
+        component: () => import('@/views/backtest/BacktestList.vue'),
         meta: { title: '回测记录' }
       },
       {

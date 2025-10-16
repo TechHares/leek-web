@@ -57,7 +57,7 @@
         </el-form-item>
         <el-form-item label="产品类型">
           <el-select v-model="form.extra.ins_type" placeholder="请选择产品类型">
-            <el-option v-for="(label, val) in insTypeOptions" :key="val" :label="label" :value="Number(val)" />
+            <el-option v-for="(value, key) in TradeInsType" :key="key" :label="insTypeDesc(value)" :value="value" />
           </el-select>
         </el-form-item>
         <el-form-item label="时间周期">
@@ -107,21 +107,17 @@ export default {
       selectedTemplate: null,
       dynamicFormKey: 0,
       symbolInput: [],
-      insTypeOptions: {
-        [TradeInsType.SPOT]: insTypeDesc(TradeInsType.SPOT),
-        [TradeInsType.MARGIN]: insTypeDesc(TradeInsType.MARGIN),
-        [TradeInsType.SWAP]: insTypeDesc(TradeInsType.SWAP),
-        [TradeInsType.FUTURES]: insTypeDesc(TradeInsType.FUTURES),
-        [TradeInsType.OPTION]: insTypeDesc(TradeInsType.OPTION)
-      },
+      TradeInsType: TradeInsType,
       timeframeOptions: [
-        { value: 'M1', label: '1分钟' },
-        { value: 'M5', label: '5分钟' },
-        { value: 'M15', label: '15分钟' },
-        { value: 'M30', label: '30分钟' },
-        { value: 'H1', label: '1小时' },
-        { value: 'H4', label: '4小时' },
-        { value: 'D1', label: '1天' }
+        { value: '1m', label: '1分钟' },
+        { value: '3m', label: '3分钟' },
+        { value: '5m', label: '5分钟' },
+        { value: '15m', label: '15分钟' },
+        { value: '30m', label: '30分钟' },
+        { value: '1H', label: '1小时' },
+        { value: '4H', label: '4小时' },
+        { value: '12H', label: '12小时' },
+        { value: '1D', label: '1天' },
       ]
     }
   },
@@ -130,6 +126,7 @@ export default {
     await this.loadConfigs()
   },
   methods: {
+    insTypeDesc: insTypeDesc,
     formatDate(dateStr) {
       if (!dateStr) return ''
       const d = new Date(dateStr)

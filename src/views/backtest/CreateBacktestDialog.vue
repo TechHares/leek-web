@@ -34,7 +34,7 @@
               <el-option v-for="c in dataConfigs" :key="c.id" :label="c.name" :value="c.id" />
             </el-select>
             <div class="mini-summary" v-if="selectedDataCfg">
-              市场：{{ selectedDataSummary.market || '-' }} ｜ 计价币：{{ selectedDataSummary.quote_currency || '-' }} ｜ 产品：{{ insTypeOptions[selectedDataSummary.ins_type] || '-' }}
+              class_name：{{ selectedDataCfg.class_name }} ｜ 市场：{{ selectedDataSummary.market || '-' }} ｜ 计价币：{{ selectedDataSummary.quote_currency || '-' }} ｜ 产品：{{ insTypeOptions[selectedDataSummary.ins_type] || '-' }}
             </div>
           </el-form-item>
         </el-col>
@@ -108,7 +108,7 @@
         </template>
       </el-form-item>
 
-      <el-divider content-position="left">策略与寻优</el-divider>
+      <el-divider content-position="left">策略与运行模式</el-divider>
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item prop="strategy_class">
@@ -124,19 +124,25 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item>
+          <el-form-item prop="run_mode">
             <template #label>
-              启用寻优
-              <el-tooltip placement="top" content="开启：按参数空间做WF选择；关闭：按固定参数回测（也可仅填固定值）">
+              运行模式
+              <el-tooltip placement="top" content="普通：固定参数单次回测；参数寻优：搜索最优参数；Walk-Forward：滚动窗口验证">
                 <el-icon class="label-q"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
-            <el-switch v-model="form.enable_optim" @change="onEnableOptimToggle" />
+            <el-select v-model="form.run_mode" placeholder="请选择运行模式" @change="onRunModeChange">
+              <el-option label="单次(单标的单周期)" value="single" />
+              <el-option label="固定参数" value="normal" />
+              <el-option label="Walk-Forward Analysis" value="walk_forward" />
+              <!-- <el-option label="蒙特卡洛模拟(开发中)" value="monte_carlo" /> -->
+            </el-select>
           </el-form-item>
         </el-col>
       </el-row>
 
-      <el-form-item v-if="!form.enable_optim" label="策略参数">
+      <!-- 普通模式：固定参数 -->
+      <el-form-item v-if="form.run_mode === 'normal' || form.run_mode === 'single'" label="策略参数">
         <div class="param-scroll-area">
           <DynamicForm
             v-if="selectedStrategyTemplate && Array.isArray(selectedStrategyTemplate.parameters) && selectedStrategyTemplate.parameters.length > 0 && form.strategy_class"
@@ -148,7 +154,8 @@
         </div>
       </el-form-item>
 
-      <el-form-item label="参数空间" v-if="form.enable_optim">
+      <!-- 参数寻优 或 Walk-Forward：参数空间 -->
+      <el-form-item label="参数空间" v-if="form.run_mode === 'walk_forward'">
         <div class="param-space">
           <div v-for="(row, idx) in form.param_items" :key="idx" class="param-row">
             <el-input :model-value="getParamLabel(row.name)" disabled style="width: 200px;" />
@@ -171,9 +178,30 @@
           </div>
         </div>
         <div class="mini-summary" style="margin-top:8px;">
-          参数组合：{{ paramComboCount }} ｜ 训练窗口：{{ windowCount }} ｜ 符号×周期：{{ symbolTfCount }} ｜ CV：{{ cvFactor }}
-          <el-tag :type="riskTagType" size="small" style="margin-left:8px;">预估评估数量：{{ totalTrainJobs }}</el-tag>
+          参数组合：{{ paramComboCount }}
+          <template v-if="form.run_mode === 'walk_forward'">
+            ｜ 训练窗口：{{ windowCount }} ｜ 符号×周期：{{ symbolTfCount }} ｜ CV：{{ cvFactor }}
+            <el-tag :type="riskTagType" size="small" style="margin-left:8px;">预估评估数量：{{ totalTrainJobs }}</el-tag>
+          </template>
         </div>
+      </el-form-item>
+
+      <!-- 性能优化选项 -->
+      <el-form-item v-if="form.run_mode != 'single'" label="性能优化">
+        <el-row :gutter="24">
+          <el-col :span="20">
+            <el-form-item label="共享内存缓存">
+              <el-switch 
+                v-model="form.use_cache" 
+                active-text="启用"
+                inactive-text="禁用"
+              />
+              <div class="mini-summary" style="margin-top: 4px;">
+                启用后数据将缓存在本地，大幅提升参数搜索性能
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form-item>
 
       <el-divider content-position="left">子策略</el-divider>
@@ -224,8 +252,8 @@
         </el-row>
       </el-form-item>
 
-      <el-divider content-position="left">稳健性阈值</el-divider>
-      <div class="mini-summary" style="margin: -8px 0 8px 0; display:flex; align-items:center;">
+      <el-divider v-if="form.run_mode === 'walk_forward'" content-position="left">稳健性阈值</el-divider>
+      <div v-if="form.run_mode === 'walk_forward'" class="mini-summary" style="margin: -8px 0 8px 0; display:flex; align-items:center;">
         <span style="margin-right:8px;">快捷设置：</span>
         <el-radio-group v-model="thresholdPreset" size="small" @change="onThresholdPresetChange">
           <el-radio-button label="loose">宽松</el-radio-button>
@@ -233,7 +261,7 @@
           <el-radio-button label="strict">严格</el-radio-button>
         </el-radio-group>
       </div>
-      <el-row :gutter="20">
+      <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
         <el-col :span="6">
           <el-form-item>
             <template #label>
@@ -284,8 +312,8 @@
         </el-col>
       </el-row>
 
-      <el-divider content-position="left">Walk-Forward 设置</el-divider>
-      <el-row :gutter="20">
+      <el-divider v-if="form.run_mode === 'walk_forward'" content-position="left">Walk-Forward 设置</el-divider>
+      <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
         <el-col :span="8">
           <el-form-item prop="train_days">
             <template #label>
@@ -294,8 +322,7 @@
                 <el-icon class="label-q"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
-            <el-input-number v-model="form.train_days" :min="0" :controls="false" :disabled="!form.enable_optim" />
-            <template #extra v-if="!form.enable_optim">未启用寻优时，训练天数固定为 0</template>
+            <el-input-number v-model="form.train_days" :min="0" :controls="false" />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -321,11 +348,12 @@
           </el-form-item>
         </el-col>
       </el-row>
-      <el-row :gutter="20">
+      <!-- Walk-Forward专属：窗口模式和CV折数 -->
+      <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
         <el-col :span="8">
           <el-form-item>
             <template #label>
-              模式
+              窗口模式
               <el-tooltip placement="top" content="滚动：固定窗长前移；扩展：训练集从开始累积扩展">
                 <el-icon class="label-q"><InfoFilled /></el-icon>
               </el-tooltip>
@@ -350,12 +378,48 @@
         <el-col :span="8">
           <el-form-item>
             <template #label>
-              并发
-              <el-tooltip placement="top" content="并发度（后续可做符号/窗口级并行）">
+              并发度
+              <el-tooltip placement="top" content="并发执行的进程数（窗口×标的级并行）">
                 <el-icon class="label-q"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
-            <el-input-number v-model="form.max_workers" :min="1" :controls="false" />
+            <el-input-number v-model="form.max_workers" :min="1" :max="16" :controls="false" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <!-- Walk-Forward：优化目标 -->
+      <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
+        <el-col :span="12">
+          <el-form-item prop="optimization_objective">
+            <template #label>
+              优化目标
+              <el-tooltip placement="top" content="用于训练阶段选择最佳参数的目标函数">
+                <el-icon class="label-q"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </template>
+            <el-select v-model="form.optimization_objective" placeholder="选择优化目标">
+              <el-option label="夏普比率" value="sharpe_ratio" />
+              <el-option label="卡尔玛比率" value="calmar_ratio" />
+              <el-option label="索提诺比率" value="sortino_ratio" />
+              <el-option label="盈亏比" value="profit_factor" />
+              <el-option label="胜率" value="win_rate" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      
+      <!-- 普通/参数寻优模式：并发度设置 -->
+      <el-row v-if="form.run_mode !== 'walk_forward'" :gutter="20">
+        <el-col :span="12">
+          <el-form-item>
+            <template #label>
+              并发度
+              <el-tooltip placement="top" content="并发执行的进程数（参数组合级并行）">
+                <el-icon class="label-q"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </template>
+            <el-input-number v-model="form.max_workers" :min="1" :max="16" :controls="false" style="width: 100%;" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -374,7 +438,7 @@
 </template>
 
 <script>
-import { listBacktestConfigs, createWalkForwardTask } from '@/api/backtest'
+import { listBacktestConfigs, createEnhancedBacktest } from '@/api/backtest'
 import { getStrategyTemplates, getStrategyPolicyTemplates } from '@/api/strategy'
 import DynamicForm from '@/components/DynamicForm.vue'
 import { TradeInsType, insTypeDesc } from '@/utils/enum'
@@ -414,13 +478,15 @@ export default {
       riskPolicies: [],
       paramNameOptions: [],
       timeframeOptions: [
-        { value: 'M1', label: '1分钟' },
-        { value: 'M5', label: '5分钟' },
-        { value: 'M15', label: '15分钟' },
-        { value: 'M30', label: '30分钟' },
-        { value: 'H1', label: '1小时' },
-        { value: 'H4', label: '4小时' },
-        { value: 'D1', label: '1天' }
+        { value: '1m', label: '1分钟' },
+        { value: '3m', label: '3分钟' },
+        { value: '5m', label: '5分钟' },
+        { value: '15m', label: '15分钟' },
+        { value: '30m', label: '30分钟' },
+        { value: '1H', label: '1小时' },
+        { value: '4H', label: '4小时' },
+        { value: '12H', label: '12小时' },
+        { value: '1D', label: '1天' },
       ],
       insTypeOptions: {
         [TradeInsType.SPOT]: insTypeDesc(TradeInsType.SPOT),
@@ -438,7 +504,8 @@ export default {
         train_days: [{ type: 'number', required: true, message: '请输入训练天数', trigger: 'change' }],
         test_days: [{ type: 'number', required: true, message: '请输入测试天数', trigger: 'change' }],
         symbols: [{ type: 'array', required: true, message: '请填写标的', trigger: 'change' }],
-        timeframes: [{ type: 'array', required: true, message: '请选择时间周期', trigger: 'change' }]
+        timeframes: [{ type: 'array', required: true, message: '请选择时间周期', trigger: 'change' }],
+        optimization_objective: [{ required: true, message: '请选择优化目标', trigger: 'change' }]
       },
       formRef: null,
       form: {
@@ -448,7 +515,7 @@ export default {
         cost_config_id: undefined,
         date_range: null,
         strategy_class: undefined,
-        enable_optim: true,
+        run_mode: 'normal',  // 运行模式：normal/param_search/walk_forward
         params: {},
         param_items: [],
         train_days: 60,
@@ -457,12 +524,15 @@ export default {
         mode: 'rolling',
         cv_splits: 0,
         max_workers: 1,
+        optimization_objective: 'sharpe_ratio',
         symbols: [],
         timeframes: [],
         sharpe_median_min: 1.0,
         sharpe_p25_min: 0.5,
         mdd_median_max: 0.2,
         min_trades_per_window: 20,
+        // 性能优化配置
+        use_cache: true,
         // 覆盖项已取消，但保留内部状态用于展示数据配置摘要
         market: '',
         quote_currency: '',
@@ -499,77 +569,117 @@ export default {
     fillFromInitial(cfg) {
       try {
         const c = typeof cfg === 'string' ? this.safeParse(cfg) : (cfg || {})
+        
+        // 直接使用run_mode字段，不再推断
+        const runMode = c.mode || 'single'
+        
+        // 根据运行模式解析参数
+        let paramsToSet = null
+        let itemsToSet = null
+        
+        if (runMode === 'normal' || runMode === 'single') {
+          // 普通模式：从strategy_params或params获取
+          if (c.strategy_params && Object.keys(c.strategy_params).length > 0) {
+            paramsToSet = { ...c.strategy_params }
+          } else if (c.params && Object.keys(c.params).length > 0) {
+            paramsToSet = { ...c.params }
+          } else if (c.param_space && Object.keys(c.param_space).length > 0) {
+            // 如果只有param_space，提取单值
+            paramsToSet = {}
+            for (const [k, arr] of Object.entries(c.param_space)) {
+              if (Array.isArray(arr) && arr.length === 1) paramsToSet[k] = arr[0]
+            }
+          }
+        } else {
+          // 参数寻优或WF：从param_space获取
+          if (c.param_space && Object.keys(c.param_space).length > 0) {
+            itemsToSet = Object.entries(c.param_space).map(([k, arr]) => {
+              if (Array.isArray(arr) && arr.length === 1) {
+                return { name: k, mode: 'value', value: arr[0], min: '', max: '', step: '', choices: [] }
+              }
+              const range = this.inferRangeFromArray(arr)
+              if (range) {
+                return { name: k, mode: 'range', value: '', min: range.min, max: range.max, step: range.step, choices: [] }
+              }
+              return { name: k, mode: 'choices', choices: arr, value: '', min: '', max: '', step: '' }
+            })
+          }
+        }
+        
+        // 基本信息
         this.form.name = (c.name ? `${c.name}_copy` : '') || this.form.name
         this.form.data_config_id = c.data_config_id ?? this.form.data_config_id
         this.form.cost_config_id = c.cost_config_id ?? this.form.cost_config_id
         this.form.symbols = Array.isArray(c.symbols) ? [...c.symbols] : this.form.symbols
         this.form.timeframes = Array.isArray(c.timeframes) ? [...c.timeframes] : this.form.timeframes
-        if (c.start && c.end) this.form.date_range = [c.start, c.end]
+        
+        // 时间范围（支持多种字段名）
+        if (c.start && c.end) {
+          this.form.date_range = [c.start, c.end]
+        } else if (c.start_time && c.end_time) {
+          this.form.date_range = [c.start_time, c.end_time]
+        }
+        
         this.form.train_days = c.train_days ?? this.form.train_days
         this.form.test_days = c.test_days ?? this.form.test_days
         this.form.embargo_days = c.embargo_days ?? this.form.embargo_days
-        this.form.mode = c.mode ?? this.form.mode
         this.form.cv_splits = c.cv_splits ?? this.form.cv_splits
         this.form.max_workers = c.max_workers ?? this.form.max_workers
         this.form.sharpe_median_min = c.sharpe_median_min ?? this.form.sharpe_median_min
         this.form.sharpe_p25_min = c.sharpe_p25_min ?? this.form.sharpe_p25_min
         this.form.mdd_median_max = c.mdd_median_max ?? this.form.mdd_median_max
         this.form.min_trades_per_window = c.min_trades_per_window ?? this.form.min_trades_per_window
+        
+        // 窗口模式（仅WF使用）
+        if (c.mode === 'rolling' || c.mode === 'expanding') {
+          this.form.mode = c.mode
+        }
+        
         // 覆盖项（仅用于展示）
         this.form.market = c.market ?? this.form.market
         this.form.quote_currency = c.quote_currency ?? this.form.quote_currency
         this.form.ins_type = c.ins_type ?? this.form.ins_type
 
-        // 预解析参数：若 param_space 全是单值，则视为未开启寻优
-        let enableOptimComputed = this.form.enable_optim
-        let paramsToSet = null
-        let itemsToSet = null
-        if (c.param_space && Object.keys(c.param_space).length > 0) {
-          const entries = Object.entries(c.param_space)
-          const allSingleton = entries.every(([_, arr]) => Array.isArray(arr) && arr.length <= 1)
-          if (allSingleton) {
-            enableOptimComputed = false
-            paramsToSet = {}
-            for (const [k, arr] of entries) {
-              if (Array.isArray(arr) && arr.length === 1) paramsToSet[k] = arr[0]
+        // 先设置运行模式和策略类
+        this.form.run_mode = runMode
+        if (c.strategy_class) {
+          this.form.strategy_class = c.strategy_class
+          this.handleStrategyTemplateChange(c.strategy_class)
+        }
+        
+        // 等待下一个tick，让handleStrategyTemplateChange执行完毕
+        this.$nextTick(() => {
+          // 再写入参数（避免被 handleStrategyTemplateChange 重置）
+          if (runMode === 'normal' || runMode === 'single') {
+            if (paramsToSet) {
+              this.form.params = { ...paramsToSet }
+              this.strategyParamFormKey++
             }
           } else {
-            enableOptimComputed = true
-            itemsToSet = entries.map(([k, arr]) => {
-              if (Array.isArray(arr) && arr.length === 1) {
-                return { name: k, mode: 'value', value: arr[0], min: '', max: '', step: '', choices: [] }
-              }
-              return { name: k, mode: 'choices', choices: arr, value: '', min: '', max: '', step: '' }
-            })
+            if (itemsToSet && itemsToSet.length > 0) {
+              this.form.param_items = [...itemsToSet]
+            }
           }
-        } else if (c.params && Object.keys(c.params).length > 0) {
-          enableOptimComputed = false
-          paramsToSet = { ...c.params }
-        }
-
-        // 先设置策略类与“是否寻优”，以便模板初始化
-        if (c.strategy_class) this.form.strategy_class = c.strategy_class
-        this.form.enable_optim = !!enableOptimComputed
-        if (this.form.strategy_class) this.handleStrategyTemplateChange(this.form.strategy_class)
-
-        // 再写入参数（避免被 handleStrategyTemplateChange 重置）
-        if (this.form.enable_optim) {
-          if (itemsToSet) this.form.param_items = itemsToSet
-        } else {
-          if (paramsToSet) this.form.params = paramsToSet
-        }
-        this.suggestName()
-        // 风控：根据初始配置回填
-        try {
-          const rps = Array.isArray(c.risk_policies) ? c.risk_policies : []
-          this.riskPolicies = []
-          for (const rp of rps) {
-            const cls = rp.class_name || rp.cls
-            const tpl = (this.riskPolicyTemplates || []).find(t => t.cls === cls)
-            const name = tpl ? tpl.name : (cls || 'policy')
-            this.riskPolicies.push({ name, enabled: true, params: rp.config || rp.params || {} })
+          this.suggestName()
+          
+          // 风控：根据初始配置回填
+          try {
+            const rps = Array.isArray(c.risk_policies) ? c.risk_policies : []
+            this.riskPolicies = []
+            for (const rp of rps) {
+              const cls = rp.class_name || rp.cls
+              const tpl = (this.riskPolicyTemplates || []).find(t => t.cls === cls)
+              const name = tpl ? tpl.name : (cls || 'policy')
+              this.riskPolicies.push({ 
+                name, 
+                enabled: true, 
+                params: rp.config || rp.params || {} 
+              })
+            }
+          } catch (e) { 
+            // ignore
           }
-        } catch (e) { /* ignore */ }
+        })
       } catch (e) {
         // ignore
       }
@@ -677,12 +787,34 @@ export default {
     safeParse(s) {
       try { return JSON.parse(s) } catch { return {} }
     },
-    onEnableOptimToggle(val) {
-      if (val) {
-        this.initParamSpaceFromTemplate()
-      } else {
-        // 未启用寻优时强制训练天数为 0
+    inferRangeFromArray(arr) {
+      if (!Array.isArray(arr) || arr.length < 2) return null
+      const nums = arr.map(Number)
+      if (nums.some(n => !Number.isFinite(n))) return null
+      let step = null
+      for (let i = 1; i < nums.length; i++) {
+        const d = Number((nums[i] - nums[i - 1]).toFixed(12))
+        if (i === 1) {
+          step = d
+        } else if (Math.abs(d - step) > 1e-9) {
+          return null
+        }
+      }
+      if (!(step > 0)) return null
+      return { min: nums[0], max: nums[nums.length - 1], step }
+    },
+    onRunModeChange(val) {
+      if (val === 'normal' || val === 'single') {
+        // 普通模式：使用固定参数
         this.form.train_days = 0
+        this.form.params = {}
+      } else if (val === 'walk_forward') {
+        // Walk-Forward：初始化参数空间和窗口设置
+        this.initParamSpaceFromTemplate()
+        if (this.form.train_days === 0) {
+          this.form.train_days = 60
+        }
+        if (!this.form.optimization_objective) this.form.optimization_objective = 'sharpe_ratio'
       }
     },
     onThresholdPresetChange(val) {
@@ -768,13 +900,13 @@ export default {
         const payload = this.buildPayload()
         try {
           this.submitting = true
-          await createWalkForwardTask(payload)
+          await createEnhancedBacktest(payload)
           this.$message.success('创建回测任务成功')
           this.$emit('created')
           this.$emit('update:visible', false)
         } catch (e) {
           console.error('创建回测任务失败:', e)
-          this.$message.error('创建回测任务失败')
+          this.$message.error('创建回测任务失败: ' + (e.response?.data?.detail || e.message))
         } finally {
           this.submitting = false
         }
@@ -782,9 +914,13 @@ export default {
     },
     buildPayload() {
       const [start, end] = Array.isArray(this.form.date_range) ? this.form.date_range : [null, null]
+      
+      // 构建参数空间或固定参数
       const param_space = {}
-      // 优先从参数空间构建
-      if (this.form.enable_optim) {
+      let strategy_params = null
+      
+      if (this.form.run_mode === 'param_search' || this.form.run_mode === 'walk_forward') {
+        // 参数寻优或WF：构建参数空间
         for (const row of this.form.param_items) {
           if (!row || !row.name) continue
           if (row.mode === 'value') {
@@ -799,50 +935,84 @@ export default {
             param_space[row.name] = Array.isArray(row.choices) ? row.choices.map(coerce) : []
           }
         }
-      }
-      // 若未启用寻优或空间为空，则回退为 params 单值列表
-      if (Object.keys(param_space).length === 0) {
+      } else {
+        // 普通模式：使用固定参数
         if (this.form.params && Object.keys(this.form.params).length > 0) {
+          strategy_params = {}
           for (const [k, v] of Object.entries(this.form.params)) {
-            param_space[k] = [coerce(v)]
-          }
-        } else if (Array.isArray(this.form.param_items)) {
-          for (const row of this.form.param_items) {
-            if (!row || !row.name) continue
-            param_space[row.name] = [coerce(row.value)]
+            strategy_params[k] = coerce(v)
           }
         }
       }
+      
+      // 如果既没有param_space也没有strategy_params，从param_items构建单值param_space
+      if (Object.keys(param_space).length === 0 && !strategy_params && Array.isArray(this.form.param_items)) {
+        for (const row of this.form.param_items) {
+          if (!row || !row.name) continue
+          param_space[row.name] = [coerce(row.value)]
+        }
+      }
+      
+      // 获取数据配置和费用配置
+      const dataConfig = this.dataConfigs.find(c => c.id === this.form.data_config_id)
+      const dataExtra = dataConfig ? (typeof dataConfig.extra === 'string' ? JSON.parse(dataConfig.extra) : dataConfig.extra) : {}
+      
+      const costConfig = this.costConfigs.find(c => c.id === this.form.cost_config_id)
+      const costParams = costConfig ? (typeof costConfig.params === 'string' ? JSON.parse(costConfig.params) : costConfig.params) : {}
       const payload = {
         name: this.form.name,
+        run_mode: this.form.run_mode,  // 前端运行模式（用于回填）
         strategy_class: this.form.strategy_class,
-        param_space,
-        data_config_id: this.form.data_config_id,
-        cost_config_id: this.form.cost_config_id,
         symbols: [...(this.form.symbols || [])],
         timeframes: [...(this.form.timeframes || [])],
-        start, end,
-        // 未启用寻优则强制 0
-        train_days: this.form.enable_optim ? this.form.train_days : 0,
-        test_days: this.form.test_days,
-        embargo_days: this.form.embargo_days,
-        mode: this.form.mode,
-        cv_splits: this.form.cv_splits,
+        start_time: start,
+        end_time: end,
+        market: this.selectedDataCfg.extra.market,
+        quote_currency: this.selectedDataCfg.extra.quote_currency,
+        ins_type: this.selectedDataCfg.extra.ins_type,
+        initial_balance: 10000,
+        executor_class: costConfig?.class_name,
+        executor_config: costParams || {},
         max_workers: this.form.max_workers,
-        sharpe_median_min: this.form.sharpe_median_min,
-        sharpe_p25_min: this.form.sharpe_p25_min,
-        mdd_median_max: this.form.mdd_median_max,
-        min_trades_per_window: this.form.min_trades_per_window,
-        market: this.form.market,
-        quote_currency: this.form.quote_currency,
-        ins_type: this.form.ins_type
+        embargo_days: this.form.embargo_days,
+        cv_splits: this.form.cv_splits,
+        data_source_config: dataExtra.data_source_config || {},
+        data_config_id: this.form.data_config_id,
+        cost_config_id: this.form.cost_config_id
       }
+      
+      // 参数
+      if (strategy_params) {
+        payload.strategy_params = strategy_params
+      } else if (Object.keys(param_space).length > 0) {
+        payload.param_space = param_space
+      }
+      
+      // Walk-Forward专属参数
+      if (this.form.run_mode === 'walk_forward') {
+        payload.train_days = this.form.train_days
+        payload.test_days = this.form.test_days
+        // 稳健性阈值
+        payload.sharpe_median_min = this.form.sharpe_median_min
+        payload.sharpe_p25_min = this.form.sharpe_p25_min
+        payload.mdd_median_max = this.form.mdd_median_max
+        payload.min_trades_per_window = this.form.min_trades_per_window
+        payload.optimization_objective = this.form.optimization_objective || 'sharpe_ratio'
+        // window mode passthrough for backend (wf_window_mode)
+        payload.wf_window_mode = this.form.mode
+      }
+      
+      // 性能优化配置
+      payload.use_cache = this.form.use_cache
+      
       // 组装风控参数（仅传已启用的）
-      try {
-        payload.risk_policies = (this.riskPolicyTemplates || [])
-          .filter(tpl => this.isRiskPolicyEnabled(tpl.name))
-          .map(tpl => ({ class_name: tpl.cls, config: (this.riskPolicies.find(p => p.name === tpl.name)?.params) || {} }))
-      } catch (e) { /* ignore */ }
+      payload.risk_policies = (this.riskPolicyTemplates || [])
+        .filter(tpl => this.isRiskPolicyEnabled(tpl.name))
+        .map(tpl => ({ 
+          class_name: tpl.cls, 
+          config: (this.riskPolicies.find(p => p.name === tpl.name)?.params) || {} 
+        }))
+      payload.mode = this.form.run_mode
       return payload
     }
   }
@@ -912,6 +1082,7 @@ export default {
       }
     },
     windowCount() {
+      if (this.form.run_mode !== 'walk_forward') return 1
       try {
         if (!Array.isArray(this.form.date_range) || !this.form.date_range[0] || !this.form.date_range[1]) return 0
         const start = new Date(this.form.date_range[0] + 'T00:00:00Z')
@@ -961,7 +1132,7 @@ export default {
       return c <= 1 ? 1 : c
     },
     paramComboCount() {
-      if (!this.form.enable_optim) return 1
+      if (this.form.run_mode === 'normal') return 1
       const items = Array.isArray(this.form.param_items) ? this.form.param_items : []
       let total = 1
       for (const row of items) {
