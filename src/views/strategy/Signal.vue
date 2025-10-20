@@ -83,7 +83,7 @@
                     {{ assetTypeZh(asset.asset_type) }}|{{ asset.symbol }}_{{ asset.quote_currency }}|{{ insTypeZh(asset.ins_type) }}
                   </el-tag>
                   <!-- 2. side -->
-                  <el-tag size="small" type="success" class="mr-2">
+                  <el-tag size="small" :type="getPositionSideTag(asset.side)" class="mr-2">
                     {{ sideZh(asset.side) }}, {{ asset.ratio }}
                   </el-tag>
                   <!-- 3. ratio, price -->
