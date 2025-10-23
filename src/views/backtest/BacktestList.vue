@@ -327,6 +327,7 @@ export default {
       this.stopPolling()
       // 每5秒刷新一次，如果有运行中的任务
       this.pollTimer = setInterval(() => {
+        if (document.hidden) return;
         const hasRunning = this.list.some(t => t.status === 'running' || t.status === 'pending')
         if (hasRunning) {
           this.loadData()
