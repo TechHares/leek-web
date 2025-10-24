@@ -187,17 +187,27 @@
       </el-form-item>
 
       <!-- 性能优化选项 -->
-      <el-form-item v-if="form.run_mode != 'single'" label="性能优化">
+      <el-form-item label="性能优化">
         <el-row :gutter="24">
           <el-col :span="20">
-            <el-form-item label="共享内存缓存">
+            <el-form-item label="启用缓存">
               <el-switch 
                 v-model="form.use_cache" 
                 active-text="启用"
                 inactive-text="禁用"
               />
               <div class="mini-summary" style="margin-top: 4px;">
-                启用后数据将缓存在本地，大幅提升参数搜索性能
+                启用后数据将缓存在本地，多窗口同数据的回测性能
+              </div>
+            </el-form-item>
+            <el-form-item label="记录日志">
+              <el-switch 
+                v-model="form.log_file" 
+                active-text="开启"
+                inactive-text="关闭"
+              />
+              <div class="mini-summary" style="margin-top: 4px;">
+                写入 {taskId}.log（每个任务一个文件），默认关闭
               </div>
             </el-form-item>
           </el-col>
@@ -533,6 +543,7 @@ export default {
         min_trades_per_window: 20,
         // 性能优化配置
         use_cache: true,
+        log_file: false,
         // 覆盖项已取消，但保留内部状态用于展示数据配置摘要
         market: '',
         quote_currency: '',
@@ -1004,6 +1015,8 @@ export default {
       
       // 性能优化配置
       payload.use_cache = this.form.use_cache
+      // 日志选项
+      payload.log_file = !!this.form.log_file
       
       // 组装风控参数（仅传已启用的）
       payload.risk_policies = (this.riskPolicyTemplates || [])

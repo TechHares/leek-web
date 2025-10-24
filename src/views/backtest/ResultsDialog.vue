@@ -677,6 +677,61 @@
           <pre style="background: #f5f7fa; padding: 16px; border-radius: 4px; max-height: 400px; overflow-y: auto; font-size: 13px;">{{ JSON.stringify(task.config, null, 2) }}</pre>
           </div>
         </el-tab-pane>
+      
+      <!-- 时间 -->
+      <el-tab-pane label="时间" name="times">
+        <div class="tab-content">
+          <template v-if="timeSummaryAvailable">
+            <el-row :gutter="16" style="margin-bottom: 5px;">
+              <el-col :span="6">
+                <div class="metric-card">
+                  <div class="metric-title">总时间</div>
+                  <div class="metric-value">{{ formatSecondsDisplay(times.total_time_sec) }}</div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="metric-card">
+                  <div class="metric-title">执行时间</div>
+                  <div class="metric-value">{{ formatSecondsDisplay(times.execution_time) }}</div>
+                </div>
+              </el-col>
+              <el-col :span="4">
+                <div class="metric-card">
+                  <div class="metric-title">窗口数</div>
+                  <div class="metric-value">{{ times.window_count || (windows||[]).length || '-' }}</div>
+                </div>
+              </el-col>
+              <el-col :span="4">
+                <div class="metric-card">
+                  <div class="metric-title">并发数</div>
+                  <div class="metric-value">{{ times.concurrency || task?.config?.max_workers || '-' }}</div>
+                </div>
+              </el-col>
+            </el-row>
+
+            <el-table :data="timeStageRows" border stripe size="small">
+              <el-table-column label="阶段" prop="stage" min-width="140">
+                <template #default="scope">{{ stageLabel(scope.row.stage) }}</template>
+              </el-table-column>
+              <el-table-column label="均值(秒)" prop="mean" min-width="120">
+                <template #default="scope">{{ formatNumber(scope.row.mean, 3) }}</template>
+              </el-table-column>
+              <el-table-column label="P50(秒)" prop="median" min-width="120">
+                <template #default="scope">{{ formatNumber(scope.row.median, 3) }}</template>
+              </el-table-column>
+              <el-table-column label="P95(秒)" prop="p95" min-width="120">
+                <template #default="scope">{{ formatNumber(scope.row.p95, 3) }}</template>
+              </el-table-column>
+              <el-table-column label="P99(秒)" prop="p99" min-width="120">
+                <template #default="scope">{{ formatNumber(scope.row.p99, 3) }}</template>
+              </el-table-column>
+            </el-table>
+          </template>
+          <template v-else>
+            <div style="color:#909399;">暂无时间数据</div>
+          </template>
+        </div>
+      </el-tab-pane>
       </el-tabs>
     </div>
 
@@ -783,9 +838,53 @@ export default {
         return row
       })
       return rows
+    },
+    times() {
+      try { return (this.task?.summary?.times) || {} } catch (e) { return {} }
+    },
+    timeSummaryAvailable() {
+      const t = this.times || {}
+      return !!(t && (t.total_time_sec || (t.stages && Object.keys(t.stages||{}).length>0)))
+    },
+    timeStageRows() {
+      const t = this.times || {}
+      const stages = t.stages || {}
+      const order = ['init','get_data','skip_data','backtest','metrics','total']
+      const rows = []
+      for (const k of order) {
+        if (!stages[k]) continue
+        rows.push({ stage: k, ...stages[k] })
+      }
+      // append any other keys
+      for (const k of Object.keys(stages)) {
+        if (order.includes(k)) continue
+        rows.push({ stage: k, ...stages[k] })
+      }
+      return rows
     }
   },
   methods: {
+    stageLabel(key) {
+      const map = {
+        init: '初始化环境',
+        get_data: '加载数据',
+        skip_data: '越过前置数据',
+        backtest: '回测执行',
+        metrics: '指标聚合',
+        total: '总计'
+      }
+      return map[key] || key
+    },
+    formatSecondsDisplay(sec) {
+      const s = Number(sec)
+      if (!Number.isFinite(s) || s < 0) return '-'
+      if (s < 120) return `${s.toFixed(2)}s`
+      const h = Math.floor(s / 3600)
+      const m = Math.floor((s % 3600) / 60)
+      const rs = Math.floor(s % 60)
+      if (h > 0) return `${h}h ${m}m ${rs}s`
+      return `${m}m ${rs}s`
+    },
     buildMetricsTable() {
       const groupBy = this.metricsGroupBy
       const map = {}
