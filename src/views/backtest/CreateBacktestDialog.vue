@@ -190,14 +190,14 @@
       <el-form-item label="性能优化">
         <el-row :gutter="24">
           <el-col :span="20">
-            <el-form-item label="启用缓存">
+            <el-form-item label="启用本地文件缓存">
               <el-switch 
                 v-model="form.use_cache" 
                 active-text="启用"
                 inactive-text="禁用"
               />
               <div class="mini-summary" style="margin-top: 4px;">
-                启用后数据将缓存在本地，多窗口同数据的回测性能
+                启用后数据将缓存在本地磁盘，提升多窗口同数据的回测性能(如果使用Redis缓存， 没必要启用)
               </div>
             </el-form-item>
             <el-form-item label="记录日志">
@@ -542,7 +542,7 @@ export default {
         mdd_median_max: 0.2,
         min_trades_per_window: 20,
         // 性能优化配置
-        use_cache: true,
+        use_cache: false,
         log_file: false,
         // 覆盖项已取消，但保留内部状态用于展示数据配置摘要
         market: '',

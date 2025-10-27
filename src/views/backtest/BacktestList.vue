@@ -51,7 +51,7 @@
         <el-table-column prop="name" label="名称" min-width="200" />
         <el-table-column prop="strategy_class" label="策略" min-width="150">
           <template #default="scope">
-            {{ formatStrategyName(scope.row.strategy_class) }}
+            {{ scope.row.strategy_display_name || formatStrategyName(scope.row.strategy_class) }}
           </template>
         </el-table-column>
         <el-table-column prop="type" label="类型" width="120">
