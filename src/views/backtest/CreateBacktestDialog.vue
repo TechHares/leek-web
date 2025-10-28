@@ -262,65 +262,7 @@
         </el-row>
       </el-form-item>
 
-      <el-divider v-if="form.run_mode === 'walk_forward'" content-position="left">稳健性阈值</el-divider>
-      <div v-if="form.run_mode === 'walk_forward'" class="mini-summary" style="margin: -8px 0 8px 0; display:flex; align-items:center;">
-        <span style="margin-right:8px;">快捷设置：</span>
-        <el-radio-group v-model="thresholdPreset" size="small" @change="onThresholdPresetChange">
-          <el-radio-button label="loose">宽松</el-radio-button>
-          <el-radio-button label="standard">标准</el-radio-button>
-          <el-radio-button label="strict">严格</el-radio-button>
-        </el-radio-group>
-      </div>
-      <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
-        <el-col :span="6">
-          <el-form-item>
-            <template #label>
-              Sharpe中位数
-              <el-tooltip placement="top" content="筛选标准：所有窗口按 (symbol,timeframe) 聚合后的夏普比率的中位数下限。建议≥1.0，过低说明稳定性不足。">
-                <el-icon class="label-q"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </template>
-            <el-input-number v-model="form.sharpe_median_min" :min="-10" :max="10" :step="0.1" :controls="false" :precision="2" />
-            <template #extra>例如 1.0</template>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <template #label>
-              Sharpe P25
-              <el-tooltip placement="top" content="稳健性底线：夏普分布的第25分位下限。用于避免靠极少数窗口拉高均值。建议≥0.5。">
-                <el-icon class="label-q"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </template>
-            <el-input-number v-model="form.sharpe_p25_min" :min="-10" :max="10" :step="0.1" :controls="false" :precision="2" />
-            <template #extra>例如 0.5</template>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <template #label>
-              最大回撤上限
-              <el-tooltip placement="top" content="风险约束：最大回撤(绝对值)的中位数上限。填写百分数，例如 20 代表 20%。">
-                <el-icon class="label-q"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </template>
-            <el-input v-model.number="mddPercent" type="number" class="percent-input" />
-            <template #extra>例如 20 表示 20%</template>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <template #label>
-              最小成交数
-              <el-tooltip placement="top" content="流动性约束：每个训练/测试窗口至少需要出现的成交次数。避免由于样本稀疏造成的虚高指标。">
-                <el-icon class="label-q"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </template>
-            <el-input-number v-model="form.min_trades_per_window" :min="0" :controls="false" />
-            <template #extra>例如 20</template>
-          </el-form-item>
-        </el-col>
-      </el-row>
+      
 
       <el-divider v-if="form.run_mode === 'walk_forward'" content-position="left">Walk-Forward 设置</el-divider>
       <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
@@ -385,22 +327,11 @@
             <el-input-number v-model="form.cv_splits" :min="0" :controls="false" />
           </el-form-item>
         </el-col>
-        <el-col :span="8">
-          <el-form-item>
-            <template #label>
-              并发度
-              <el-tooltip placement="top" content="并发执行的进程数（窗口×标的级并行）">
-                <el-icon class="label-q"><InfoFilled /></el-icon>
-              </el-tooltip>
-            </template>
-            <el-input-number v-model="form.max_workers" :min="1" :max="16" :controls="false" />
-          </el-form-item>
-        </el-col>
       </el-row>
 
       <!-- Walk-Forward：优化目标 -->
       <el-row v-if="form.run_mode === 'walk_forward'" :gutter="20">
-        <el-col :span="12">
+        <el-col :span="8">
           <el-form-item prop="optimization_objective">
             <template #label>
               优化目标
@@ -417,10 +348,39 @@
             </el-select>
           </el-form-item>
         </el-col>
+        <el-col :span="8">
+          
+        </el-col>
       </el-row>
       
+      <el-divider v-if="form.run_mode === 'walk_forward'" content-position="left">Optuna 设置(贝叶斯/TPE参数搜索)</el-divider>
       <!-- 普通/参数寻优模式：并发度设置 -->
-      <el-row v-if="form.run_mode !== 'walk_forward'" :gutter="20">
+      <el-row :gutter="20">
+        <el-col :span="8">
+            <el-form-item>
+              <template #label>
+                启用 Optuna
+                <el-tooltip placement="top" content="启用后在训练窗口内使用贝叶斯/TPE进行参数搜索。关闭时使用网格搜索。">
+                  <el-icon class="label-q"><InfoFilled /></el-icon>
+                </el-tooltip>
+              </template>
+              <el-switch v-model="form.optuna_enabled" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item>
+              <template #label>
+                试验次数
+                <el-tooltip placement="top" content="Optuna 评估次数（建议 50~100）">
+                  <el-icon class="label-q"><InfoFilled /></el-icon>
+                </el-tooltip>
+              </template>
+              <el-input-number v-model="form.optuna_n_trials" :min="1" :max="10000" :controls="false" />
+            </el-form-item>
+          </el-col>
+      </el-row>
+      <el-divider content-position="left" v-if="form.run_mode !== 'single'">并发度设置</el-divider>
+      <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item>
             <template #label>
@@ -537,10 +497,10 @@ export default {
         optimization_objective: 'sharpe_ratio',
         symbols: [],
         timeframes: [],
-        sharpe_median_min: 1.0,
-        sharpe_p25_min: 0.5,
-        mdd_median_max: 0.2,
-        min_trades_per_window: 20,
+        
+        // Optuna
+        optuna_enabled: true,
+        optuna_n_trials: 80,
         // 性能优化配置
         use_cache: false,
         log_file: false,
@@ -555,8 +515,7 @@ export default {
       loadInFlight: false,
       lastLoadPromise: null
       ,
-      thresholdPreset: 'standard'
-      ,
+      
       submitting: false
     }
   },
@@ -564,8 +523,6 @@ export default {
     // 默认最近三月
     this.form.date_range = this.computeShortcutRange(3)
     await this.loadAll()
-    // 初始化阈值为标准
-    this.applyThresholdPreset('standard')
     // 加载风控策略模板
     try {
       const { data } = await getStrategyPolicyTemplates()
@@ -636,10 +593,7 @@ export default {
         this.form.embargo_days = c.embargo_days ?? this.form.embargo_days
         this.form.cv_splits = c.cv_splits ?? this.form.cv_splits
         this.form.max_workers = c.max_workers ?? this.form.max_workers
-        this.form.sharpe_median_min = c.sharpe_median_min ?? this.form.sharpe_median_min
-        this.form.sharpe_p25_min = c.sharpe_p25_min ?? this.form.sharpe_p25_min
-        this.form.mdd_median_max = c.mdd_median_max ?? this.form.mdd_median_max
-        this.form.min_trades_per_window = c.min_trades_per_window ?? this.form.min_trades_per_window
+        
         
         // 窗口模式（仅WF使用）
         if (c.mode === 'rolling' || c.mode === 'expanding') {
@@ -828,22 +782,6 @@ export default {
         if (!this.form.optimization_objective) this.form.optimization_objective = 'sharpe_ratio'
       }
     },
-    onThresholdPresetChange(val) {
-      this.applyThresholdPreset(val)
-    },
-    applyThresholdPreset(preset) {
-      const presets = {
-        loose: { sharpe: 0.5, p25: 0.0, mddPct: 30, trades: 5 },
-        standard: { sharpe: 1.0, p25: 0.5, mddPct: 20, trades: 20 },
-        strict: { sharpe: 1.5, p25: 1.0, mddPct: 15, trades: 30 }
-      }
-      const cfg = presets[preset] || presets.standard
-      this.form.sharpe_median_min = cfg.sharpe
-      this.form.sharpe_p25_min = cfg.p25
-      this.mddPercent = cfg.mddPct
-      this.form.min_trades_per_window = cfg.trades
-      this.thresholdPreset = preset
-    },
     onNameInput() {
       this.manualNameEdited = true
     },
@@ -1003,14 +941,12 @@ export default {
       if (this.form.run_mode === 'walk_forward') {
         payload.train_days = this.form.train_days
         payload.test_days = this.form.test_days
-        // 稳健性阈值
-        payload.sharpe_median_min = this.form.sharpe_median_min
-        payload.sharpe_p25_min = this.form.sharpe_p25_min
-        payload.mdd_median_max = this.form.mdd_median_max
-        payload.min_trades_per_window = this.form.min_trades_per_window
         payload.optimization_objective = this.form.optimization_objective || 'sharpe_ratio'
         // window mode passthrough for backend (wf_window_mode)
         payload.wf_window_mode = this.form.mode
+        // Optuna
+        payload.optuna_enabled = !!this.form.optuna_enabled
+        payload.optuna_n_trials = Number(this.form.optuna_n_trials || 0)
       }
       
       // 性能优化配置
@@ -1079,21 +1015,7 @@ export default {
         slippage_bps: params.slippage_bps
       }
     },
-    mddPercent: {
-      get() {
-        const v = Number(this.form.mdd_median_max)
-        if (!Number.isFinite(v)) return 0
-        return Math.round(Math.abs(v) * 100 * 100) / 100
-      },
-      set(p) {
-        const num = Number(p)
-        if (!Number.isFinite(num)) {
-          this.form.mdd_median_max = undefined
-        } else {
-          this.form.mdd_median_max = -(Math.abs(num) / 100)
-        }
-      }
-    },
+    
     windowCount() {
       if (this.form.run_mode !== 'walk_forward') return 1
       try {
