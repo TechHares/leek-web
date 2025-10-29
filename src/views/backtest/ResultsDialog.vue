@@ -181,17 +181,54 @@
                   <el-option label="按标的" value="symbol" />
                   <el-option label="按周期" value="timeframe" />
                 </el-select>
+                <el-switch v-model="hideZeroTrades" size="small" active-text="隐藏0交易" inactive-text="显示0交易" />
               </div>
-              <el-table :data="metricsTableRows" border stripe size="small" @row-click="onMetricsRowClick">
+              <el-table :data="metricsTableRows" border stripe size="small" max-height="400">
                 <el-table-column :label="metricsGroupBy==='symbol' ? '标的' : '周期'" prop="group" min-width="120" />
-                <el-table-column label="年化收益率" prop="annual_return" min-width="140">
-                  <template #default="scope">{{ formatPercent(scope.row.annual_return) }}</template>
+                <el-table-column label="年化收益率" prop="annual_return" min-width="120" sortable>
+                  <template #default="scope">{{ displayWithMarker('annual_return', scope.row.annual_return, 'percent') }}</template>
                 </el-table-column>
-                <el-table-column label="最大回撤" prop="max_drawdown" min-width="120">
-                  <template #default="scope">{{ formatPercent(Math.abs(scope.row.max_drawdown || 0)) }}</template>
+                <el-table-column label="最大回撤" prop="max_drawdown" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('max_drawdown', scope.row.max_drawdown, 'mdd') }}</template>
                 </el-table-column>
-                <el-table-column label="夏普比率" prop="sharpe_ratio" min-width="120">
-                  <template #default="scope">{{ formatNumber(scope.row.sharpe_ratio, 2) }}</template>
+                <el-table-column label="夏普比率" prop="sharpe_ratio" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('sharpe_ratio', scope.row.sharpe_ratio, 'number') }}</template>
+                </el-table-column>
+                <el-table-column label="交易次数" prop="total_trades" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('total_trades', scope.row.total_trades, 'number', 0) }}</template>
+                </el-table-column>
+                <el-table-column label="多次数" prop="long_trades" min-width="100" sortable>
+                  <template #default="scope">{{ displayWithMarker('long_trades', scope.row.long_trades, 'number', 0) }}</template>
+                </el-table-column>
+                <el-table-column label="空次数" prop="short_trades" min-width="100" sortable>
+                  <template #default="scope">{{ displayWithMarker('short_trades', scope.row.short_trades, 'number', 0) }}</template>
+                </el-table-column>
+                <el-table-column label="胜率" prop="win_rate" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('win_rate', scope.row.win_rate, 'percent') }}</template>
+                </el-table-column>
+                <el-table-column label="多胜率" prop="long_win_rate" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('long_win_rate', scope.row.long_win_rate, 'percent') }}</template>
+                </el-table-column>
+                <el-table-column label="空胜率" prop="short_win_rate" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('short_win_rate', scope.row.short_win_rate, 'percent') }}</template>
+                </el-table-column>
+                <el-table-column label="收益" prop="avg_pnl" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_pnl', scope.row.avg_pnl, 'number') }}</template>
+                </el-table-column>
+                <el-table-column label="多收益" prop="avg_pnl_long" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_pnl_long', scope.row.avg_pnl_long, 'number') }}</template>
+                </el-table-column>
+                <el-table-column label="空收益" prop="avg_pnl_short" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_pnl_short', scope.row.avg_pnl_short, 'number') }}</template>
+                </el-table-column>
+                <el-table-column label="收益率" prop="avg_return_per_trade" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_return_per_trade', scope.row.avg_return_per_trade, 'percent') }}</template>
+                </el-table-column>
+                <el-table-column label="多收益率" prop="avg_return_long" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_return_long', scope.row.avg_return_long, 'percent') }}</template>
+                </el-table-column>
+                <el-table-column label="空收益率" prop="avg_return_short" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_return_short', scope.row.avg_return_short, 'percent') }}</template>
                 </el-table-column>
               </el-table>
               <div style="margin-top: 8px;">
@@ -215,9 +252,8 @@
                   <el-option label="最大回撤" value="max_drawdown" />
                   <el-option label="胜率" value="win_rate" />
                 </el-select>
-                <span style="color:#909399;">点击单元格可联动上方曲线</span>
               </div>
-              <el-table :data="pivotRows" border stripe size="small" @cell-click="onPivotCellClick">
+              <el-table :data="pivotRows" border stripe size="small">
                 <el-table-column label="标的" prop="symbol" fixed width="140" />
                 <el-table-column v-for="tf in pivotColumns" :key="tf" :label="tf" :prop="tf" min-width="110">
                   <template #default="scope">
@@ -564,7 +600,7 @@
               <el-col :span="12">
                 <el-card>
                   <template #header><h4 style="margin: 0;">按 标的×周期 平均 Sharpe</h4></template>
-                  <el-table :data="wfAvgBySymbolTf" border size="small">
+                  <el-table :data="wfAvgBySymbolTf" border size="small" style="width: 100%;" :table-layout="'fixed'">
                     <el-table-column prop="symbol" label="标的" width="120" />
                     <el-table-column prop="timeframe" label="周期" width="100" />
                     <el-table-column prop="sharpe" label="平均Sharpe" width="140">
@@ -772,6 +808,7 @@ export default {
       heatmapMetric: 'sharpe_ratio',
       metricsGroupBy: 'symbol',
       pivotMetric: 'sharpe_ratio',
+      hideZeroTrades: true,
       // WF state
       wfSharpeTimelineChart: null,
       wfHistSharpeChart: null,
@@ -812,11 +849,50 @@ export default {
   computed: {
     metricsTableRows() {
       const t = this.buildMetricsTable()
-      return t.rows
+      const rows = t.rows || []
+      return (this.isNormalMode() && this.hideZeroTrades) ? rows.filter(r => Number(r.total_trades || 0) > 0) : rows
+    },
+    metricsExtremes() {
+      const rows = this.metricsTableRows || []
+      const keys = ['annual_return','max_drawdown','sharpe_ratio','total_trades','long_trades','short_trades','win_rate','long_win_rate','short_win_rate','avg_pnl','avg_pnl_long','avg_pnl_short','avg_return_per_trade','avg_return_long','avg_return_short']
+      const ext = {}
+      for (const k of keys) {
+        const vals = rows.map(r => {
+          const v = Number(r[k] || 0)
+          return k === 'max_drawdown' ? Math.abs(v || 0) : v
+        }).filter(v => isFinite(v))
+        if (vals.length) {
+          ext[k] = { min: Math.min(...vals), max: Math.max(...vals) }
+        } else {
+          ext[k] = { min: 0, max: 0 }
+        }
+      }
+      return ext
     },
     metricsSummaryRows() {
-      const t = this.buildMetricsTable()
-      return t.summary
+      const rows = this.metricsTableRows || []
+      const allAnnual = rows.map(r => r.annual_return)
+      const allMdd = rows.map(r => r.max_drawdown)
+      const allSharpe = rows.map(r => r.sharpe_ratio)
+      const std = (list) => {
+        if (!list.length) return 0
+        const mean = list.reduce((a, b) => a + b, 0) / list.length
+        const variance = list.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / list.length
+        return Math.sqrt(variance)
+      }
+      const meanRow = {
+        label: '均值',
+        annual_return: (allAnnual.reduce((a, b) => a + b, 0) / (allAnnual.length || 1)) || 0,
+        max_drawdown: (allMdd.reduce((a, b) => a + b, 0) / (allMdd.length || 1)) || 0,
+        sharpe_ratio: (allSharpe.reduce((a, b) => a + b, 0) / (allSharpe.length || 1)) || 0
+      }
+      const stdRow = {
+        label: '标准差',
+        annual_return: std(allAnnual) || 0,
+        max_drawdown: std(allMdd) || 0,
+        sharpe_ratio: std(allSharpe) || 0
+      }
+      return [meanRow, stdRow]
     },
     pivotColumns() {
       const set = new Set((this.windows || []).map(w => w.timeframe || 'unknown'))
@@ -895,17 +971,62 @@ export default {
         map[key].push({
           annual_return: Number(m.annual_return || 0),
           max_drawdown: Number(m.max_drawdown || 0),
-          sharpe_ratio: Number(m.sharpe_ratio || 0)
+          sharpe_ratio: Number(m.sharpe_ratio || 0),
+          total_trades: Number(m.total_trades || 0),
+          win_trades: Number(m.win_trades || 0),
+          long_trades: Number(m.long_trades || 0),
+          short_trades: Number(m.short_trades || 0),
+          long_win_trades: Number(m.long_win_trades || 0),
+          short_win_trades: Number(m.short_win_trades || 0),
+          avg_pnl: Number(m.avg_pnl || 0),
+          avg_pnl_long: Number(m.avg_pnl_long || 0),
+          avg_pnl_short: Number(m.avg_pnl_short || 0),
+          avg_return_per_trade: Number(m.avg_return_per_trade || 0),
+          avg_return_long: Number(m.avg_return_long || 0),
+          avg_return_short: Number(m.avg_return_short || 0),
         })
       }
       const rows = Object.keys(map).map(k => {
         const arr = map[k]
         const avg = (key) => arr.reduce((s, v) => s + (v[key] || 0), 0) / (arr.length || 1)
+        const sum = (key) => arr.reduce((s, v) => s + (v[key] || 0), 0)
+
+        const total_trades = sum('total_trades')
+        const long_trades = sum('long_trades')
+        const short_trades = sum('short_trades')
+        const win_trades = sum('win_trades')
+        const long_win_trades = sum('long_win_trades')
+        const short_win_trades = sum('short_win_trades')
+
+        const weighted = (valKey, weightKey, defaultDiv = 0) => {
+          const numerator = arr.reduce((s, v) => s + (Number(v[valKey] || 0) * Number(v[weightKey] || 0)), 0)
+          const denom = sum(weightKey)
+          return denom ? (numerator / denom) : defaultDiv
+        }
+
+        const avg_pnl = weighted('avg_pnl', 'total_trades', 0)
+        const avg_pnl_long = weighted('avg_pnl_long', 'long_trades', 0)
+        const avg_pnl_short = weighted('avg_pnl_short', 'short_trades', 0)
+        const avg_return_per_trade = weighted('avg_return_per_trade', 'total_trades', 0)
+        const avg_return_long = weighted('avg_return_long', 'long_trades', 0)
+        const avg_return_short = weighted('avg_return_short', 'short_trades', 0)
         return {
           group: k,
           annual_return: avg('annual_return'),
           max_drawdown: avg('max_drawdown'),
-          sharpe_ratio: avg('sharpe_ratio')
+          sharpe_ratio: avg('sharpe_ratio'),
+          total_trades,
+          long_trades,
+          short_trades,
+          win_rate: total_trades ? (win_trades / total_trades) : 0,
+          long_win_rate: long_trades ? (long_win_trades / long_trades) : 0,
+          short_win_rate: short_trades ? (short_win_trades / short_trades) : 0,
+          avg_pnl,
+          avg_pnl_long,
+          avg_pnl_short,
+          avg_return_per_trade,
+          avg_return_long,
+          avg_return_short,
         }
       })
       const allAnnual = rows.map(r => r.annual_return)
@@ -1319,6 +1440,16 @@ export default {
       if (value === undefined || value === null || !isFinite(value)) return '-'
       return (Number(value) * 100).toFixed(2) + '%'
     },
+    displayWithMarker(key, value, type = 'number', decimals = 2) {
+      const ext = this.metricsExtremes[key] || { min: null, max: null }
+      let v = Number(value || 0)
+      // 使用展示口径
+      if (key === 'max_drawdown') v = Math.abs(v || 0)
+      const marker = (isFinite(v) && ext) ? (Math.abs(v - ext.max) < 1e-12 ? ' ↑' : Math.abs(v - ext.min) < 1e-12 ? ' ↓' : '') : ''
+      if (type === 'percent') return this.formatPercent(v) + marker
+      if (type === 'mdd') return this.formatPercent(v) + marker
+      return this.formatNumber(v, decimals) + marker
+    },
     
     getTrendClass(value) {
       if (value === undefined || value === null || !isFinite(value)) return ''
@@ -1360,18 +1491,7 @@ export default {
       if (!this.selectedSymbol || !this.selectedTimeframe) return this.windows?.[0]
       return this.windows.find(w => w.symbol === this.selectedSymbol && w.timeframe === this.selectedTimeframe) || this.windows?.[0]
     },
-    onMetricsRowClick(row) {
-      if (this.metricsGroupBy === 'symbol') {
-        this.selectedSymbol = row.group
-        const first = (this.windows || []).find(w => w.symbol === row.group)
-        if (first) this.selectedTimeframe = first.timeframe
-      } else {
-        this.selectedTimeframe = row.group
-        const first = (this.windows || []).find(w => w.timeframe === row.group)
-        if (first) this.selectedSymbol = first.symbol
-      }
-      this.$nextTick(() => this.renderCharts())
-    },
+    
     displayPivot(v) {
       if (v === undefined || v === null || !isFinite(v)) return '-'
       if (this.pivotMetric === 'sharpe_ratio') return this.formatNumber(v, 2)

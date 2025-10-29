@@ -56,5 +56,5 @@ export function createEnhancedBacktest(data) {
 
 // Get enhanced backtest results
 export function getEnhancedBacktestResults(taskId, params = {}) {
-  return apiClient.get(`/backtest/enhanced/${taskId}/results`, { params })
+  return apiClient.get(`/backtest/enhanced/${taskId}/results`, { params, timeout: 60000 })
 }

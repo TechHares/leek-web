@@ -355,7 +355,7 @@
       
       <el-divider v-if="form.run_mode === 'walk_forward'" content-position="left">Optuna 设置(贝叶斯/TPE参数搜索)</el-divider>
       <!-- 普通/参数寻优模式：并发度设置 -->
-      <el-row :gutter="20">
+      <el-row :gutter="20" v-if="form.run_mode === 'walk_forward'">
         <el-col :span="8">
             <el-form-item>
               <template #label>
@@ -367,7 +367,7 @@
               <el-switch v-model="form.optuna_enabled" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="8" v-if="form.run_mode === 'walk_forward' && form.optuna_enabled">
             <el-form-item>
               <template #label>
                 试验次数
