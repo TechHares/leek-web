@@ -93,6 +93,19 @@
                 </div>
               </div>
             </el-col>
+            <el-col :span="4">
+              <div class="metric-card">
+                <div class="metric-title">
+                  统计显著性
+                  <el-tooltip placement="top" content="t检验p值，衡量策略收益是否显著大于0。p<0.05表示显著，p<0.1表示边际显著。">
+                    <el-icon class="label-q"><InfoFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+                <div class="metric-value" :style="getStatisticalSignificanceStyle(metrics.t_pvalue)">
+                  {{ formatStatisticalSignificance(metrics.t_pvalue) }}
+                </div>
+              </div>
+            </el-col>
           </el-row>
 
           <!-- WF 概览统计，仅在 walk_forward 显示 -->
@@ -471,6 +484,168 @@
           </div>
         </el-tab-pane>
 
+        <!-- 统计检验 -->
+        <el-tab-pane label="统计检验" name="statistical">
+          <div class="tab-content">
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-card>
+                  <template #header><h4 style="margin: 0;">t检验结果</h4></template>
+                  <el-descriptions :column="1" border size="small">
+                    <el-descriptions-item label="t统计量">
+                      {{ formatNumber(metrics.t_statistic, 4) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="p值">
+                      <span :style="getStatisticalSignificanceStyle(metrics.t_pvalue)">
+                        {{ formatNumber(metrics.t_pvalue, 4) }}
+                      </span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="统计显著性">
+                      {{ formatStatisticalSignificance(metrics.t_pvalue) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="解释">
+                      <div style="font-size: 12px; color: #606266;">
+                        <template v-if="metrics.t_pvalue === 1.0 && (metrics.t_statistic === undefined || metrics.t_statistic === 0.0)">
+                          净值数据点不足（少于2个），无法计算t检验。请确保回测有足够的数据点。
+                        </template>
+                        <template v-else>
+                          单样本t检验，检验策略收益率是否显著大于0。p值越小，说明策略收益越不可能是随机产生的。
+                        </template>
+                      </div>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+              </el-col>
+              <el-col :span="12">
+                <el-card v-if="metrics.paired_t_statistic !== undefined && metrics.paired_t_statistic !== 0">
+                  <template #header><h4 style="margin: 0;">配对t检验（vs基准）</h4></template>
+                  <el-descriptions :column="1" border size="small">
+                    <el-descriptions-item label="t统计量">
+                      {{ formatNumber(metrics.paired_t_statistic, 4) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="p值">
+                      <span :style="getStatisticalSignificanceStyle(metrics.paired_t_pvalue)">
+                        {{ formatNumber(metrics.paired_t_pvalue, 4) }}
+                      </span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="统计显著性">
+                      {{ formatStatisticalSignificance(metrics.paired_t_pvalue) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="解释">
+                      <div style="font-size: 12px; color: #606266;">
+                        配对t检验，检验策略是否显著优于基准。p值越小，说明策略越显著优于基准。
+                      </div>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+                <el-card v-else>
+                  <template #header><h4 style="margin: 0;">配对t检验（vs基准）</h4></template>
+                  <div style="color: #909399; padding: 20px; text-align: center;">
+                    无基准数据，无法进行配对t检验
+                  </div>
+                </el-card>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="16" style="margin-top: 16px;">
+              <el-col :span="12">
+                <el-card>
+                  <template #header><h4 style="margin: 0;">Bootstrap置信区间（Sharpe比率）</h4></template>
+                  <el-descriptions :column="1" border size="small">
+                    <el-descriptions-item label="Sharpe比率">
+                      {{ formatNumber(metrics.sharpe_ratio, 3) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="95%置信区间下界">
+                      {{ formatNumber(metrics.bootstrap_sharpe_ci_lower, 3) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="95%置信区间上界">
+                      {{ formatNumber(metrics.bootstrap_sharpe_ci_upper, 3) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="解释">
+                      <div style="font-size: 12px; color: #606266;">
+                        通过Bootstrap重采样（1000次）估计Sharpe比率的置信区间。区间越窄，说明Sharpe比率的估计越稳健。
+                      </div>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+              </el-col>
+              <el-col :span="12">
+                <el-card>
+                  <template #header><h4 style="margin: 0;">Bootstrap置信区间（年化收益率）</h4></template>
+                  <el-descriptions :column="1" border size="small">
+                    <el-descriptions-item label="年化收益率">
+                      {{ formatPercent(metrics.annual_return) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="95%置信区间下界">
+                      {{ formatPercent(metrics.bootstrap_annual_return_ci_lower) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="95%置信区间上界">
+                      {{ formatPercent(metrics.bootstrap_annual_return_ci_upper) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="解释">
+                      <div style="font-size: 12px; color: #606266;">
+                        通过Bootstrap重采样（1000次）估计年化收益率的置信区间。区间越窄，说明年化收益率的估计越稳健。
+                      </div>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="16" style="margin-top: 16px;">
+              <el-col :span="12">
+                <el-card>
+                  <template #header><h4 style="margin: 0;">胜率二项检验</h4></template>
+                  <el-descriptions :column="1" border size="small">
+                    <el-descriptions-item label="胜率">
+                      {{ formatPercent(metrics.win_rate) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="p值">
+                      <span :style="getStatisticalSignificanceStyle(metrics.win_rate_pvalue)">
+                        {{ formatNumber(metrics.win_rate_pvalue, 4) }}
+                      </span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="统计显著性">
+                      {{ formatStatisticalSignificance(metrics.win_rate_pvalue) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="解释">
+                      <div style="font-size: 12px; color: #606266;">
+                        二项检验，检验胜率是否显著大于50%。p值越小，说明胜率越不可能是随机产生的。
+                      </div>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+              </el-col>
+              <el-col :span="12" v-if="metrics.paired_t_statistic !== undefined && metrics.paired_t_statistic !== 0">
+                <el-card>
+                  <template #header><h4 style="margin: 0;">Alpha显著性检验</h4></template>
+                  <el-descriptions :column="1" border size="small">
+                    <el-descriptions-item label="Alpha">
+                      {{ formatPercent(metrics.alpha) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="Beta">
+                      {{ formatNumber(metrics.beta, 3) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="R²">
+                      {{ formatNumber(metrics.r_squared, 3) }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="Alpha p值">
+                      <span :style="getStatisticalSignificanceStyle(metrics.alpha_pvalue)">
+                        {{ formatNumber(metrics.alpha_pvalue, 4) }}
+                      </span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="解释">
+                      <div style="font-size: 12px; color: #606266;">
+                        Alpha衡量策略的超额收益（相对于基准）。p值越小，说明Alpha越显著不为0。
+                      </div>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+              </el-col>
+            </el-row>
+          </div>
+        </el-tab-pane>
+
         <!-- 窗口详情 -->
         <el-tab-pane v-if="task.type === 'walk_forward'" label="窗口详情" name="windows">
           <div class="tab-content">
@@ -542,7 +717,7 @@
                 </el-tooltip>
               </template>
               <template #default="scope">
-                {{ scope.row.test_trades || 0 }}
+                {{ (scope.row.test_metrics || scope.row.metrics || {}).total_trades || 0 }}
               </template>
             </el-table-column>
             <el-table-column min-width="160">
@@ -1439,6 +1614,28 @@ export default {
     formatPercent(value) {
       if (value === undefined || value === null || !isFinite(value)) return '-'
       return (Number(value) * 100).toFixed(2) + '%'
+    },
+    formatStatisticalSignificance(pvalue) {
+      if (pvalue === undefined || pvalue === null || !isFinite(pvalue)) return '-'
+      // 检测是否为默认值（数据不足的情况）
+      if (pvalue === 1.0 && (this.metrics.t_statistic === undefined || this.metrics.t_statistic === 0.0)) {
+        return '数据不足'
+      }
+      if (pvalue < 0.001) return '极显著 (p<0.001)'
+      if (pvalue < 0.01) return '高度显著 (p<0.01)'
+      if (pvalue < 0.05) return '显著 (p<0.05)'
+      if (pvalue < 0.1) return '边际显著 (p<0.1)'
+      return `不显著 (p=${pvalue.toFixed(3)})`
+    },
+    getStatisticalSignificanceStyle(pvalue) {
+      if (pvalue === undefined || pvalue === null || !isFinite(pvalue)) return {}
+      // 检测是否为默认值（数据不足的情况）
+      if (pvalue === 1.0 && (this.metrics.t_statistic === undefined || this.metrics.t_statistic === 0.0)) {
+        return { color: '#909399' } // 灰色：数据不足
+      }
+      if (pvalue < 0.05) return { color: '#67c23a' } // 绿色：显著
+      if (pvalue < 0.1) return { color: '#e6a23c' } // 黄色：边际显著
+      return { color: '#f56c6c' } // 红色：不显著
     },
     displayWithMarker(key, value, type = 'number', decimals = 2) {
       const ext = this.metricsExtremes[key] || { min: null, max: null }
