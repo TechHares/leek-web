@@ -31,19 +31,6 @@
             <el-col :span="4">
               <div class="metric-card">
                 <div class="metric-title">
-                  年化收益率
-                  <el-tooltip placement="top" content="将总收益率按年化计算的收益率。用于比较不同时间长度策略的表现。一般年化收益率>10%为良好，>20%为优秀。">
-                    <el-icon class="label-q"><InfoFilled /></el-icon>
-                  </el-tooltip>
-                </div>
-                <div class="metric-value" :style="getTrendStyle(metrics.annual_return)">
-                  {{ formatPercent(metrics.annual_return) }}
-                </div>
-              </div>
-            </el-col>
-            <el-col :span="4">
-              <div class="metric-card">
-                <div class="metric-title">
                   夏普比率
                   <el-tooltip placement="top" content="衡量风险调整后收益的指标，公式为(收益率-无风险利率)/波动率。夏普比率>1为良好，>2为优秀，>3为卓越。">
                     <el-icon class="label-q"><InfoFilled /></el-icon>
@@ -188,18 +175,49 @@
         <el-tab-pane label="详细指标" name="metrics">
           <div class="tab-content">
             <template v-if="isNormalMode()">
-              <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 12px;">
+              <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span>分组：</span>
                 <el-select v-model="metricsGroupBy" size="small" style="width: 140px;">
                   <el-option label="按标的" value="symbol" />
                   <el-option label="按周期" value="timeframe" />
                 </el-select>
-                <el-switch v-model="hideZeroTrades" size="small" active-text="隐藏0交易" inactive-text="显示0交易" />
+                <span v-if="zeroTradeWindowsCount > 0" style="color: #909399; font-size: 12px;">
+                  已过滤0交易窗口 {{ zeroTradeWindowsCount }} 条
+                </span>
+                <span style="margin-left: auto;">其他数据：</span>
+                <el-select 
+                  v-model="selectedExtraColumns" 
+                  multiple 
+                  collapse-tags
+                  collapse-tags-tooltip
+                  size="small" 
+                  style="width: 400px;"
+                  placeholder="选择要显示的额外列"
+                >
+                  <el-option label="做多次数" value="long_trades" />
+                  <el-option label="做空次数" value="short_trades" />
+                  <el-option label="做多胜率" value="long_win_rate" />
+                  <el-option label="做空胜率" value="short_win_rate" />
+                  <el-option label="做多平均收益" value="avg_pnl_long" />
+                  <el-option label="做空平均收益" value="avg_pnl_short" />
+                  <el-option label="做多平均收益率" value="avg_return_long" />
+                  <el-option label="做空平均收益率" value="avg_return_short" />
+                  <el-option label="做多中位数收益" value="median_pnl_long" />
+                  <el-option label="做空中位数收益" value="median_pnl_short" />
+                  <el-option label="做多中位数收益率" value="median_return_long" />
+                  <el-option label="做空中位数收益率" value="median_return_short" />
+                  <el-option label="平均利润" value="avg_win" />
+                  <el-option label="平均亏损" value="avg_loss" />
+                  <el-option label="做多平均利润" value="avg_win_long" />
+                  <el-option label="做空平均利润" value="avg_win_short" />
+                  <el-option label="做多平均亏损" value="avg_loss_long" />
+                  <el-option label="做空平均亏损" value="avg_loss_short" />
+                </el-select>
               </div>
               <el-table :data="metricsTableRows" border stripe size="small" max-height="400">
                 <el-table-column :label="metricsGroupBy==='symbol' ? '标的' : '周期'" prop="group" min-width="120" />
-                <el-table-column label="年化收益率" prop="annual_return" min-width="120" sortable>
-                  <template #default="scope">{{ displayWithMarker('annual_return', scope.row.annual_return, 'percent') }}</template>
+                <el-table-column label="区间收益" prop="total_return" min-width="120" sortable>
+                  <template #default="scope">{{ displayWithMarker('total_return', scope.row.total_return, 'percent') }}</template>
                 </el-table-column>
                 <el-table-column label="最大回撤" prop="max_drawdown" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('max_drawdown', scope.row.max_drawdown, 'mdd') }}</template>
@@ -210,38 +228,83 @@
                 <el-table-column label="交易次数" prop="total_trades" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('total_trades', scope.row.total_trades, 'number', 0) }}</template>
                 </el-table-column>
-                <el-table-column label="多次数" prop="long_trades" min-width="100" sortable>
-                  <template #default="scope">{{ displayWithMarker('long_trades', scope.row.long_trades, 'number', 0) }}</template>
-                </el-table-column>
-                <el-table-column label="空次数" prop="short_trades" min-width="100" sortable>
-                  <template #default="scope">{{ displayWithMarker('short_trades', scope.row.short_trades, 'number', 0) }}</template>
-                </el-table-column>
                 <el-table-column label="胜率" prop="win_rate" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('win_rate', scope.row.win_rate, 'percent') }}</template>
                 </el-table-column>
-                <el-table-column label="多胜率" prop="long_win_rate" min-width="110" sortable>
+                <el-table-column label="盈亏比" prop="profit_factor" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('profit_factor', scope.row.profit_factor, 'number', 2) }}</template>
+                </el-table-column>
+                <!-- 额外列：做多次数 -->
+                <el-table-column v-if="selectedExtraColumns.includes('long_trades')" label="做多次数" prop="long_trades" min-width="100" sortable>
+                  <template #default="scope">{{ displayWithMarker('long_trades', scope.row.long_trades, 'number', 0) }}</template>
+                </el-table-column>
+                <!-- 额外列：做空次数 -->
+                <el-table-column v-if="selectedExtraColumns.includes('short_trades')" label="做空次数" prop="short_trades" min-width="100" sortable>
+                  <template #default="scope">{{ displayWithMarker('short_trades', scope.row.short_trades, 'number', 0) }}</template>
+                </el-table-column>
+                <!-- 额外列：做多胜率 -->
+                <el-table-column v-if="selectedExtraColumns.includes('long_win_rate')" label="做多胜率" prop="long_win_rate" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('long_win_rate', scope.row.long_win_rate, 'percent') }}</template>
                 </el-table-column>
-                <el-table-column label="空胜率" prop="short_win_rate" min-width="110" sortable>
+                <!-- 额外列：做空胜率 -->
+                <el-table-column v-if="selectedExtraColumns.includes('short_win_rate')" label="做空胜率" prop="short_win_rate" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('short_win_rate', scope.row.short_win_rate, 'percent') }}</template>
                 </el-table-column>
-                <el-table-column label="收益" prop="avg_pnl" min-width="110" sortable>
-                  <template #default="scope">{{ displayWithMarker('avg_pnl', scope.row.avg_pnl, 'number') }}</template>
-                </el-table-column>
-                <el-table-column label="多收益" prop="avg_pnl_long" min-width="110" sortable>
+                <!-- 额外列：做多平均收益 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_pnl_long')" label="做多平均收益" prop="avg_pnl_long" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('avg_pnl_long', scope.row.avg_pnl_long, 'number') }}</template>
                 </el-table-column>
-                <el-table-column label="空收益" prop="avg_pnl_short" min-width="110" sortable>
+                <!-- 额外列：做空平均收益 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_pnl_short')" label="做空平均收益" prop="avg_pnl_short" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('avg_pnl_short', scope.row.avg_pnl_short, 'number') }}</template>
                 </el-table-column>
-                <el-table-column label="收益率" prop="avg_return_per_trade" min-width="110" sortable>
-                  <template #default="scope">{{ displayWithMarker('avg_return_per_trade', scope.row.avg_return_per_trade, 'percent') }}</template>
-                </el-table-column>
-                <el-table-column label="多收益率" prop="avg_return_long" min-width="110" sortable>
+                <!-- 额外列：做多平均收益率 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_return_long')" label="做多平均收益率" prop="avg_return_long" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('avg_return_long', scope.row.avg_return_long, 'percent') }}</template>
                 </el-table-column>
-                <el-table-column label="空收益率" prop="avg_return_short" min-width="110" sortable>
+                <!-- 额外列：做空平均收益率 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_return_short')" label="做空平均收益率" prop="avg_return_short" min-width="110" sortable>
                   <template #default="scope">{{ displayWithMarker('avg_return_short', scope.row.avg_return_short, 'percent') }}</template>
+                </el-table-column>
+                <!-- 额外列：做多中位数收益 -->
+                <el-table-column v-if="selectedExtraColumns.includes('median_pnl_long')" label="做多中位数收益" prop="median_pnl_long" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('median_pnl_long', scope.row.median_pnl_long, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：做空中位数收益 -->
+                <el-table-column v-if="selectedExtraColumns.includes('median_pnl_short')" label="做空中位数收益" prop="median_pnl_short" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('median_pnl_short', scope.row.median_pnl_short, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：做多中位数收益率 -->
+                <el-table-column v-if="selectedExtraColumns.includes('median_return_long')" label="做多中位数收益率" prop="median_return_long" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('median_return_long', scope.row.median_return_long, 'percent') }}</template>
+                </el-table-column>
+                <!-- 额外列：做空中位数收益率 -->
+                <el-table-column v-if="selectedExtraColumns.includes('median_return_short')" label="做空中位数收益率" prop="median_return_short" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('median_return_short', scope.row.median_return_short, 'percent') }}</template>
+                </el-table-column>
+                <!-- 额外列：平均利润 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_win')" label="平均利润" prop="avg_win" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_win', scope.row.avg_win, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：平均亏损 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_loss')" label="平均亏损" prop="avg_loss" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_loss', scope.row.avg_loss, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：做多平均利润 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_win_long')" label="做多平均利润" prop="avg_win_long" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_win_long', scope.row.avg_win_long, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：做空平均利润 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_win_short')" label="做空平均利润" prop="avg_win_short" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_win_short', scope.row.avg_win_short, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：做多平均亏损 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_loss_long')" label="做多平均亏损" prop="avg_loss_long" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_loss_long', scope.row.avg_loss_long, 'number') }}</template>
+                </el-table-column>
+                <!-- 额外列：做空平均亏损 -->
+                <el-table-column v-if="selectedExtraColumns.includes('avg_loss_short')" label="做空平均亏损" prop="avg_loss_short" min-width="110" sortable>
+                  <template #default="scope">{{ displayWithMarker('avg_loss_short', scope.row.avg_loss_short, 'number') }}</template>
                 </el-table-column>
               </el-table>
               <div style="margin-top: 8px;">
@@ -249,7 +312,7 @@
                   <el-table-column prop="label" width="120" />
                   <el-table-column>
                     <template #default="scope">
-                      年化：{{ formatPercent(scope.row.annual_return) }} ｜ 回撤：{{ formatPercent(Math.abs(scope.row.max_drawdown||0)) }} ｜ 夏普：{{ formatNumber(scope.row.sharpe_ratio, 2) }}
+                      区间收益：{{ formatPercent(scope.row.total_return) }} ｜ 回撤：{{ formatPercent(Math.abs(scope.row.max_drawdown||0)) }} ｜ 夏普：{{ formatNumber(scope.row.sharpe_ratio, 2) }}
                     </template>
                   </el-table-column>
                 </el-table>
@@ -261,7 +324,7 @@
                 <span>指标：</span>
                 <el-select v-model="pivotMetric" size="small" style="width: 160px;">
                   <el-option label="夏普比率" value="sharpe_ratio" />
-                  <el-option label="年化收益率" value="annual_return" />
+                  <el-option label="区间收益" value="total_return" />
                   <el-option label="最大回撤" value="max_drawdown" />
                   <el-option label="胜率" value="win_rate" />
                 </el-select>
@@ -293,12 +356,12 @@
                       </el-descriptions-item>
                       <el-descriptions-item>
                         <template #label>
-                          年化收益率
-                          <el-tooltip placement="top" content="将总收益率按年化计算的收益率。用于比较不同时间长度策略的表现。一般年化收益率>10%为良好，>20%为优秀。">
+                          区间收益
+                          <el-tooltip placement="top" content="整个回测期间的总收益百分比。正值表示盈利，负值表示亏损。">
                             <el-icon class="label-q"><InfoFilled /></el-icon>
                           </el-tooltip>
                         </template>
-                        {{ formatPercent(metrics.annual_return) }}
+                        {{ formatPercent(metrics.total_return) }}
                       </el-descriptions-item>
                       <el-descriptions-item>
                         <template #label>
@@ -832,11 +895,11 @@
                     <div class="stats-row">最小/最大：{{ formatNumber(summaryStats.sharpe.min, 3) }} / {{ formatNumber(summaryStats.sharpe.max, 3) }}</div>
                   </div>
                   <div class="stats-block">
-                    <div class="stats-title">年化收益率</div>
-                    <div class="stats-row">均值：{{ formatPercent(summaryStats.annual.mean) }}</div>
-                    <div class="stats-row">中位：{{ formatPercent(summaryStats.annual.median) }}</div>
-                    <div class="stats-row">标准差：{{ formatPercent(summaryStats.annual.std) }}</div>
-                    <div class="stats-row">最小/最大：{{ formatPercent(summaryStats.annual.min) }} / {{ formatPercent(summaryStats.annual.max) }}</div>
+                    <div class="stats-title">区间收益</div>
+                    <div class="stats-row">均值：{{ formatPercent(summaryStats.totalReturn.mean) }}</div>
+                    <div class="stats-row">中位：{{ formatPercent(summaryStats.totalReturn.median) }}</div>
+                    <div class="stats-row">标准差：{{ formatPercent(summaryStats.totalReturn.std) }}</div>
+                    <div class="stats-row">最小/最大：{{ formatPercent(summaryStats.totalReturn.min) }} / {{ formatPercent(summaryStats.totalReturn.max) }}</div>
                   </div>
                   <div class="stats-block">
                     <div class="stats-title">最大回撤</div>
@@ -975,7 +1038,7 @@ export default {
       boxByTimeframeChart: null,
       histSharpeChart: null,
       scatterRiskReturnChart: null,
-      summaryStats: { sharpe: {}, annual: {}, mdd: {} },
+      summaryStats: { sharpe: {}, totalReturn: {}, mdd: {} },
       // new state for normal mode
       combined: null,
       selectedSymbol: null,
@@ -983,7 +1046,7 @@ export default {
       heatmapMetric: 'sharpe_ratio',
       metricsGroupBy: 'symbol',
       pivotMetric: 'sharpe_ratio',
-      hideZeroTrades: true,
+      selectedExtraColumns: [],  // 选中的额外列
       // WF state
       wfSharpeTimelineChart: null,
       wfHistSharpeChart: null,
@@ -1024,12 +1087,20 @@ export default {
   computed: {
     metricsTableRows() {
       const t = this.buildMetricsTable()
-      const rows = t.rows || []
-      return (this.isNormalMode() && this.hideZeroTrades) ? rows.filter(r => Number(r.total_trades || 0) > 0) : rows
+      return t.rows || []
+    },
+    zeroTradeWindowsCount() {
+      // 从summary中读取0交易窗口数量
+      if (this.isNormalMode()) {
+        return this.task?.summary?.normal?.zero_trade_windows_count || 0
+      } else if (this.isWFMode()) {
+        return this.task?.summary?.walk_forward?.zero_trade_windows_count || 0
+      }
+      return 0
     },
     metricsExtremes() {
       const rows = this.metricsTableRows || []
-      const keys = ['annual_return','max_drawdown','sharpe_ratio','total_trades','long_trades','short_trades','win_rate','long_win_rate','short_win_rate','avg_pnl','avg_pnl_long','avg_pnl_short','avg_return_per_trade','avg_return_long','avg_return_short']
+      const keys = ['total_return','max_drawdown','sharpe_ratio','total_trades','long_trades','short_trades','win_rate','long_win_rate','short_win_rate','profit_factor','avg_pnl','avg_pnl_long','avg_pnl_short','avg_return_per_trade','avg_return_long','avg_return_short','median_pnl_long','median_pnl_short','median_return_long','median_return_short','avg_win','avg_loss','avg_win_long','avg_loss_long','avg_win_short','avg_loss_short']
       const ext = {}
       for (const k of keys) {
         const vals = rows.map(r => {
@@ -1046,7 +1117,7 @@ export default {
     },
     metricsSummaryRows() {
       const rows = this.metricsTableRows || []
-      const allAnnual = rows.map(r => r.annual_return)
+      const allTotalReturn = rows.map(r => r.total_return)
       const allMdd = rows.map(r => r.max_drawdown)
       const allSharpe = rows.map(r => r.sharpe_ratio)
       const std = (list) => {
@@ -1057,13 +1128,13 @@ export default {
       }
       const meanRow = {
         label: '均值',
-        annual_return: (allAnnual.reduce((a, b) => a + b, 0) / (allAnnual.length || 1)) || 0,
+        total_return: (allTotalReturn.reduce((a, b) => a + b, 0) / (allTotalReturn.length || 1)) || 0,
         max_drawdown: (allMdd.reduce((a, b) => a + b, 0) / (allMdd.length || 1)) || 0,
         sharpe_ratio: (allSharpe.reduce((a, b) => a + b, 0) / (allSharpe.length || 1)) || 0
       }
       const stdRow = {
         label: '标准差',
-        annual_return: std(allAnnual) || 0,
+        total_return: std(allTotalReturn) || 0,
         max_drawdown: std(allMdd) || 0,
         sharpe_ratio: std(allSharpe) || 0
       }
@@ -1136,6 +1207,15 @@ export default {
       if (h > 0) return `${h}h ${m}m ${rs}s`
       return `${m}m ${rs}s`
     },
+    calculateMedian(values) {
+      if (!values || values.length === 0) return 0
+      const sorted = [...values].sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      if (sorted.length % 2 === 0) {
+        return (sorted[mid - 1] + sorted[mid]) / 2
+      }
+      return sorted[mid]
+    },
     buildMetricsTable() {
       const groupBy = this.metricsGroupBy
       const map = {}
@@ -1144,6 +1224,7 @@ export default {
         if (!map[key]) map[key] = []
         const m = w.metrics || w.test_metrics || {}
         map[key].push({
+          total_return: Number(m.total_return || 0),
           annual_return: Number(m.annual_return || 0),
           max_drawdown: Number(m.max_drawdown || 0),
           sharpe_ratio: Number(m.sharpe_ratio || 0),
@@ -1153,6 +1234,13 @@ export default {
           short_trades: Number(m.short_trades || 0),
           long_win_trades: Number(m.long_win_trades || 0),
           short_win_trades: Number(m.short_win_trades || 0),
+          profit_factor: Number(m.profit_factor || 0),
+          avg_win: Number(m.avg_win || 0),
+          avg_loss: Number(m.avg_loss || 0),
+          avg_win_long: Number(m.avg_win_long || 0),
+          avg_loss_long: Number(m.avg_loss_long || 0),
+          avg_win_short: Number(m.avg_win_short || 0),
+          avg_loss_short: Number(m.avg_loss_short || 0),
           avg_pnl: Number(m.avg_pnl || 0),
           avg_pnl_long: Number(m.avg_pnl_long || 0),
           avg_pnl_short: Number(m.avg_pnl_short || 0),
@@ -1170,8 +1258,11 @@ export default {
         const long_trades = sum('long_trades')
         const short_trades = sum('short_trades')
         const win_trades = sum('win_trades')
+        const loss_trades = total_trades - win_trades  // 计算亏损交易次数
         const long_win_trades = sum('long_win_trades')
+        const long_loss_trades = long_trades - long_win_trades  // 计算做多亏损交易次数
         const short_win_trades = sum('short_win_trades')
+        const short_loss_trades = short_trades - short_win_trades  // 计算做空亏损交易次数
 
         const weighted = (valKey, weightKey, defaultDiv = 0) => {
           const numerator = arr.reduce((s, v) => s + (Number(v[valKey] || 0) * Number(v[weightKey] || 0)), 0)
@@ -1185,26 +1276,69 @@ export default {
         const avg_return_per_trade = weighted('avg_return_per_trade', 'total_trades', 0)
         const avg_return_long = weighted('avg_return_long', 'long_trades', 0)
         const avg_return_short = weighted('avg_return_short', 'short_trades', 0)
+        
+        // 先计算每个窗口的亏损交易次数（用于后续计算）
+        const lossTradesByWindow = arr.map(v => (v.total_trades || 0) - (v.win_trades || 0))
+        const longLossTradesByWindow = arr.map(v => (v.long_trades || 0) - (v.long_win_trades || 0))
+        const shortLossTradesByWindow = arr.map(v => (v.short_trades || 0) - (v.short_win_trades || 0))
+        
+        // 平均利润和平均亏损：使用加权平均（按盈利/亏损交易次数加权）
+        const avg_win = weighted('avg_win', 'win_trades', 0)
+        const avg_loss = loss_trades > 0 ? arr.reduce((s, v, i) => s + (Number(v.avg_loss || 0) * lossTradesByWindow[i]), 0) / loss_trades : 0
+        
+        // 盈亏比：平均利润 / 平均亏损
+        const profit_factor = avg_loss > 0 ? (avg_win / avg_loss) : (avg_win > 0 ? Infinity : 0)
+        
+        const avg_win_long = weighted('avg_win_long', 'long_win_trades', 0)
+        const avg_loss_long = long_loss_trades > 0 ? arr.reduce((s, v, i) => s + (Number(v.avg_loss_long || 0) * longLossTradesByWindow[i]), 0) / long_loss_trades : 0
+        const avg_win_short = weighted('avg_win_short', 'short_win_trades', 0)
+        const avg_loss_short = short_loss_trades > 0 ? arr.reduce((s, v, i) => s + (Number(v.avg_loss_short || 0) * shortLossTradesByWindow[i]), 0) / short_loss_trades : 0
+        
+        // 中位数计算：收集每个窗口的对应平均值，然后计算中位数
+        const median_pnl_long = this.calculateMedian(arr.map(v => v.avg_pnl_long).filter(v => isFinite(v) && v !== null && v !== undefined))
+        const median_pnl_short = this.calculateMedian(arr.map(v => v.avg_pnl_short).filter(v => isFinite(v) && v !== null && v !== undefined))
+        const median_return_long = this.calculateMedian(arr.map(v => v.avg_return_long).filter(v => isFinite(v) && v !== null && v !== undefined))
+        const median_return_short = this.calculateMedian(arr.map(v => v.avg_return_short).filter(v => isFinite(v) && v !== null && v !== undefined))
+        
         return {
           group: k,
+          // 收益率和比率类指标：使用简单平均（因为它们是百分比/比率，不依赖于交易次数）
+          total_return: avg('total_return'),
           annual_return: avg('annual_return'),
           max_drawdown: avg('max_drawdown'),
           sharpe_ratio: avg('sharpe_ratio'),
+          // 交易次数：求和
           total_trades,
           long_trades,
           short_trades,
+          // 胜率：重新计算（盈利交易数 / 总交易数）
           win_rate: total_trades ? (win_trades / total_trades) : 0,
           long_win_rate: long_trades ? (long_win_trades / long_trades) : 0,
           short_win_rate: short_trades ? (short_win_trades / short_trades) : 0,
+          // 盈亏比：平均利润 / 平均亏损
+          profit_factor,
+          // 平均利润和平均亏损：加权平均（按盈利/亏损交易次数加权）
+          avg_win,
+          avg_loss,
+          avg_win_long,
+          avg_loss_long,
+          avg_win_short,
+          avg_loss_short,
+          // 平均收益：加权平均（按交易次数加权）
           avg_pnl,
           avg_pnl_long,
           avg_pnl_short,
           avg_return_per_trade,
           avg_return_long,
           avg_return_short,
+          // 中位数：收集各窗口的平均值后计算中位数
+          median_pnl_long,
+          median_pnl_short,
+          median_return_long,
+          median_return_short,
         }
       })
-      const allAnnual = rows.map(r => r.annual_return)
+      const allTotalReturn = rows.map(r => r.total_return)
       const allMdd = rows.map(r => r.max_drawdown)
       const allSharpe = rows.map(r => r.sharpe_ratio)
       const std = (list) => {
@@ -1215,13 +1349,13 @@ export default {
       }
       const meanRow = {
         label: '均值',
-        annual_return: (allAnnual.reduce((a, b) => a + b, 0) / (allAnnual.length || 1)) || 0,
+        total_return: (allTotalReturn.reduce((a, b) => a + b, 0) / (allTotalReturn.length || 1)) || 0,
         max_drawdown: (allMdd.reduce((a, b) => a + b, 0) / (allMdd.length || 1)) || 0,
         sharpe_ratio: (allSharpe.reduce((a, b) => a + b, 0) / (allSharpe.length || 1)) || 0
       }
       const stdRow = {
         label: '标准差',
-        annual_return: std(allAnnual) || 0,
+        total_return: std(allTotalReturn) || 0,
         max_drawdown: std(allMdd) || 0,
         sharpe_ratio: std(allSharpe) || 0
       }
@@ -1380,29 +1514,29 @@ export default {
         if (!bySymbol[symbol]) bySymbol[symbol] = []
         if (!byTimeframe[tf]) byTimeframe[tf] = []
         const sharpe = Number(m.sharpe_ratio || 0)
-        const annual = Number(m.annual_return || 0)
+        const totalReturn = Number(m.total_return || 0)
         const mdd = Number(m.max_drawdown || 0)
         bySymbol[symbol].push(sharpe)
         byTimeframe[tf].push(sharpe)
         sharpeList.push(sharpe)
-        riskReturn.push([annual, Math.abs(mdd), symbol, tf])
+        riskReturn.push([totalReturn, Math.abs(mdd), symbol, tf])
       }
       return { bySymbol, byTimeframe, sharpeList, riskReturn }
     },
 
     computeSummaryStats() {
       const listSharpe = []
-      const listAnnual = []
+      const listTotalReturn = []
       const listMdd = []
       for (const w of this.windows || []) {
         const m = w.metrics || w.test_metrics || {}
         listSharpe.push(Number(m.sharpe_ratio || 0))
-        listAnnual.push(Number(m.annual_return || 0))
+        listTotalReturn.push(Number(m.total_return || 0))
         listMdd.push(Number(m.max_drawdown || 0))
       }
       this.summaryStats = {
         sharpe: this.calcStats(listSharpe),
-        annual: this.calcStats(listAnnual),
+        totalReturn: this.calcStats(listTotalReturn),
         mdd: this.calcStats(listMdd)
       }
     },
@@ -1521,10 +1655,10 @@ export default {
       return {
         tooltip: { formatter: (p) => {
           const d = p.data
-          return `${d[2]} / ${d[3]}<br/>年化: ${this.formatPercent(d[0])}<br/>最大回撤: ${this.formatPercent(d[1])}`
+          return `${d[2]} / ${d[3]}<br/>区间收益: ${this.formatPercent(d[0])}<br/>最大回撤: ${this.formatPercent(d[1])}`
         }},
         grid: { left: 50, right: 20, top: 20, bottom: 40 },
-        xAxis: { type: 'value', name: '年化收益率', axisLabel: { formatter: (v) => `${(v*100).toFixed(0)}%` } },
+        xAxis: { type: 'value', name: '区间收益', axisLabel: { formatter: (v) => `${(v*100).toFixed(0)}%` } },
         yAxis: { type: 'value', name: '最大回撤', axisLabel: { formatter: (v) => `${(v*100).toFixed(0)}%` } },
         series: [{
           type: 'scatter', data: points || [], symbolSize: 8, itemStyle: { color: '#5470c6' }
@@ -1692,7 +1826,7 @@ export default {
     displayPivot(v) {
       if (v === undefined || v === null || !isFinite(v)) return '-'
       if (this.pivotMetric === 'sharpe_ratio') return this.formatNumber(v, 2)
-      if (this.pivotMetric === 'annual_return') return this.formatPercent(v)
+      if (this.pivotMetric === 'total_return') return this.formatPercent(v)
       if (this.pivotMetric === 'max_drawdown') return this.formatPercent(Math.abs(v||0))
       if (this.pivotMetric === 'win_rate') return this.formatPercent(v)
       return this.formatNumber(v, 2)

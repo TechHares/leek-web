@@ -332,7 +332,7 @@ export default {
         if (hasRunning) {
           this.loadData()
         }
-      }, 5000)
+      }, 30000)
     },
     
     stopPolling() {
