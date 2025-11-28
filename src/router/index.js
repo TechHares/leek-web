@@ -157,6 +157,42 @@ const routes = [
         component: () => import('@/views/risk/RiskLogs.vue'),
         meta: { title: '风控日志' }
       },
+      {
+        path: 'factor_analysis/factors',
+        name: 'FactorManagement',
+        component: () => import('@/views/factor_analysis/FactorManagement.vue'),
+        meta: { title: '因子管理' }
+      },
+      {
+        path: 'factor_analysis/groups',
+        name: 'FactorGroups',
+        component: () => import('@/views/factor_analysis/FactorGroups.vue'),
+        meta: { title: '因子组合' }
+      },
+      {
+        path: 'factor_analysis/evaluation',
+        name: 'FactorEvaluation',
+        component: () => import('@/views/factor_analysis/FactorEvaluation.vue'),
+        meta: { title: '因子评价' }
+      },
+      {
+        path: 'factor_analysis/backtest',
+        name: 'FactorBacktest',
+        component: () => import('@/views/factor_analysis/FactorBacktest.vue'),
+        meta: { title: '因子回测' }
+      },
+      {
+        path: 'factor_analysis/monitoring',
+        name: 'FactorMonitoring',
+        component: () => import('@/views/factor_analysis/FactorMonitoring.vue'),
+        meta: { title: '因子监控' }
+      },
+      {
+        path: 'factor_analysis/health',
+        name: 'FactorHealth',
+        component: () => import('@/views/factor_analysis/FactorHealth.vue'),
+        meta: { title: '健康检查' }
+      },
       
     ]
   },
