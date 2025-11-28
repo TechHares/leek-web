@@ -98,14 +98,14 @@
       <el-sub-menu index="factor_analysis">
         <template #title>
           <el-icon><Aim /></el-icon>
-          <span>因子分析</span>
+          <span>因子</span>
         </template>
         <!-- 管理功能 -->
         <el-menu-item index="/factor_analysis/factors">因子管理</el-menu-item>
         <!-- <el-menu-item index="/factor_analysis/groups">因子组合</el-menu-item> -->
         <!-- 分析功能 -->
-        <el-menu-item index="/factor_analysis/evaluation">因子评价</el-menu-item>
-        <el-menu-item index="/factor_analysis/backtest">因子回测</el-menu-item>
+        <el-menu-item index="/factor_analysis/evaluation">因子分析</el-menu-item>
+        <!-- <el-menu-item index="/factor_analysis/backtest">因子回测</el-menu-item> -->
         <!-- 运维功能 -->
         <el-menu-item index="/factor_analysis/monitoring">因子监控</el-menu-item>
         <el-menu-item index="/factor_analysis/health">健康检查</el-menu-item>

@@ -168,7 +168,7 @@
                 </el-button>
               </el-tooltip>
               
-              <el-tooltip content="评价" placement="top">
+              <el-tooltip content="分析" placement="top">
                 <el-button
                   size="small"
                   type="success"
@@ -657,7 +657,7 @@ export default {
       }).catch(() => {})
     },
     handleEvaluate(row) {
-      // 跳转到因子评价页面，并预选该因子
+      // 跳转到因子分析页面，并预选该因子
       this.$router.push({
         path: '/factor_analysis/evaluation',
         query: { factor_id: row.id }

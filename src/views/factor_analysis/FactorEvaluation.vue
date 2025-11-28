@@ -4,9 +4,8 @@
     <el-card shadow="hover" style="margin-bottom: 20px;">
       <template #header>
         <div class="header-bar">
-          <h2>因子评价</h2>
           <el-button type="primary" @click="showCreateDialog">
-            <el-icon><Plus /></el-icon> 新建评价
+            <el-icon><Plus /></el-icon> 新建分析
           </el-button>
         </div>
       </template>
@@ -15,7 +14,7 @@
       <div class="filter-bar">
         <el-input
           v-model="filters.name"
-          placeholder="搜索评价名称"
+          placeholder="搜索分析名称"
           clearable
           style="width: 200px; margin-right: 10px;"
           @keyup.enter="loadData"
@@ -119,10 +118,10 @@
       />
     </el-card>
 
-    <!-- 创建评价弹窗 -->
+    <!-- 创建分析弹窗 -->
     <el-dialog
       v-model="createDialogVisible"
-      title="新建因子评价"
+      title="新建因子分析"
       width="800px"
     >
       <el-form
@@ -132,7 +131,7 @@
         label-width="120px"
       >
         <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入评价名称" />
+          <el-input v-model="form.name" placeholder="请输入分析名称" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
@@ -195,12 +194,12 @@
             style="width: 100%;"
           />
         </el-form-item>
-        <el-form-item label="评价因子" prop="factor_ids">
+        <el-form-item label="分析因子" prop="factor_ids">
           <el-select
             v-model="form.factor_ids"
             multiple
             filterable
-            placeholder="请选择要评价的因子"
+            placeholder="请选择要分析的因子"
             style="width: 100%;"
           >
             <el-option
@@ -257,7 +256,7 @@
     <!-- 结果查看弹窗 -->
     <el-dialog
       v-model="resultsDialogVisible"
-      title="评价结果"
+      title="分析结果"
       width="1200px"
       @close="stopDetailPolling"
     >
@@ -331,7 +330,7 @@
                 :stroke-width="20"
               />
               <div style="text-align: center; margin-top: 10px; color: #909399;">
-                {{ selectedTask.status === 'running' ? '评价任务运行中，请稍候...' : '评价任务排队中，请稍候...' }}
+                {{ selectedTask.status === 'running' ? '分析任务运行中，请稍候...' : '分析任务排队中，请稍候...' }}
               </div>
             </div>
           </el-card>
@@ -341,7 +340,7 @@
         <div v-if="selectedTask.status === 'failed'" style="margin-bottom: 20px;">
           <el-alert
             type="error"
-            :title="selectedTask.error || '评价任务失败'"
+            :title="selectedTask.error || '分析任务失败'"
             show-icon
           />
         </div>
@@ -573,12 +572,12 @@ export default {
         max_workers: 1
       },
       rules: {
-        name: [{ required: true, message: '请输入评价名称', trigger: 'blur' }],
+        name: [{ required: true, message: '请输入分析名称', trigger: 'blur' }],
         data_config_id: [{ required: true, message: '请选择数据配置', trigger: 'change' }],
         symbols: [{ type: 'array', required: true, message: '请填写交易标的', trigger: 'change' }],
         timeframes: [{ type: 'array', required: true, message: '请选择时间周期', trigger: 'change' }],
         date_range: [{ type: 'array', required: true, message: '请选择时间范围', trigger: 'change' }],
-        factor_ids: [{ type: 'array', required: true, message: '请选择评价因子', trigger: 'change' }],
+        factor_ids: [{ type: 'array', required: true, message: '请选择分析因子', trigger: 'change' }],
         max_workers: [{ required: true, type: 'number', message: '请输入并发数', trigger: 'blur' }]
       },
       timeframeOptions: [
@@ -680,7 +679,7 @@ export default {
         this.list = data.items || []
         this.total = data.total || 0
       } catch (e) {
-        this.$message.error('获取评价列表失败')
+        this.$message.error('获取分析列表失败')
       }
       this.loading = false
     },
@@ -721,7 +720,10 @@ export default {
       }
       this.loadData()
     },
-    showCreateDialog() {
+    async showCreateDialog() {
+      // 打开弹窗前刷新因子列表
+      await this.loadFactors()
+      
       this.form = {
         name: '',
         remark: '',
@@ -772,7 +774,7 @@ export default {
             await this.viewDetails(taskData)
           }
         } catch (e) {
-          this.$message.error('创建评价任务失败')
+          this.$message.error('创建分析任务失败')
         }
         this.creating = false
       })
@@ -805,7 +807,7 @@ export default {
           }, 100)
         })
       } catch (e) {
-        this.$message.error('获取评价结果失败')
+        this.$message.error('获取分析结果失败')
       }
     },
     async copyTask(row) {
@@ -843,7 +845,7 @@ export default {
     },
     async deleteTask(row) {
       try {
-        await this.$confirm('确认删除该评价任务？', '提示', { type: 'warning' })
+        await this.$confirm('确认删除该分析任务？', '提示', { type: 'warning' })
         await deleteFactorEvaluationTask(row.id)
         this.$message.success('删除成功')
         this.loadData()
@@ -1569,7 +1571,7 @@ export default {
 
 .header-bar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
 }
 

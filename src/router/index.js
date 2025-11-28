@@ -173,7 +173,7 @@ const routes = [
         path: 'factor_analysis/evaluation',
         name: 'FactorEvaluation',
         component: () => import('@/views/factor_analysis/FactorEvaluation.vue'),
-        meta: { title: '因子评价' }
+        meta: { title: '因子分析' }
       },
       {
         path: 'factor_analysis/backtest',
