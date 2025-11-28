@@ -349,9 +349,6 @@
         <div v-if="selectedTask.status === 'completed'">
         <!-- 汇总指标 -->
         <el-card shadow="never" style="margin-bottom: 20px;">
-          <template #header>
-            <h3>汇总指标</h3>
-          </template>
           <el-row :gutter="20">
             <el-col :span="6">
               <div class="metric-item" :class="getSummaryItemClass('ic_mean', selectedTask.summary?.ic_mean)">
@@ -388,9 +385,6 @@
 
         <!-- 图表区域 -->
         <el-card shadow="never" v-if="selectedTask.charts || selectedTask.metrics" style="margin-bottom: 20px;">
-          <template #header>
-            <h3>可视化图表</h3>
-          </template>
           <el-tabs v-model="activeChartTab" @tab-change="handleTabChange">
             <el-tab-pane label="因子排名对比" name="ranking">
               <div ref="rankingChartRef" style="width: 100%; height: 500px;"></div>
@@ -406,9 +400,6 @@
 
         <!-- 因子指标表格 -->
         <el-card shadow="never" style="margin-bottom: 20px;">
-          <template #header>
-            <h3>因子指标</h3>
-          </template>
           <el-table
             :data="sortedMetrics"
             border
