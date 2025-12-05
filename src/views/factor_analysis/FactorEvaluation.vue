@@ -4,50 +4,55 @@
     <el-card shadow="hover" style="margin-bottom: 20px;">
       <template #header>
         <div class="header-bar">
-          <el-button type="primary" @click="showCreateDialog">
-            <el-icon><Plus /></el-icon> 新建分析
-          </el-button>
+          <div class="table-actions">
+            <div class="left-actions">
+              <el-input
+                v-model="filters.name"
+                placeholder="搜索分析名称"
+                clearable
+                style="width: 200px;"
+                class="filter-item"
+                @keyup.enter="loadData"
+              />
+              <el-select
+                v-model="filters.status"
+                placeholder="状态"
+                clearable
+                style="width: 150px;"
+                class="filter-item"
+                @change="loadData"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="排队中" value="pending" />
+                <el-option label="运行中" value="running" />
+                <el-option label="已完成" value="completed" />
+                <el-option label="失败" value="failed" />
+              </el-select>
+              <el-button @click="loadData" :loading="loading">
+                <el-icon><Search /></el-icon> 搜索
+              </el-button>
+            </div>
+            <div class="right-actions">
+              <el-button type="primary" @click="showCreateDialog">
+                <el-icon><Plus /></el-icon> 新建分析
+              </el-button>
+            </div>
+          </div>
         </div>
       </template>
 
-      <!-- 筛选栏 -->
-      <div class="filter-bar">
-        <el-input
-          v-model="filters.name"
-          placeholder="搜索分析名称"
-          clearable
-          style="width: 200px; margin-right: 10px;"
-          @keyup.enter="loadData"
-        />
-        <el-select
-          v-model="filters.status"
-          placeholder="状态"
-          clearable
-          style="width: 150px; margin-right: 10px;"
-          @change="loadData"
-        >
-          <el-option label="全部" value="" />
-          <el-option label="排队中" value="pending" />
-          <el-option label="运行中" value="running" />
-          <el-option label="已完成" value="completed" />
-          <el-option label="失败" value="failed" />
-        </el-select>
-        <el-button @click="loadData" :loading="loading">
-          <el-icon><Search /></el-icon> 搜索
-        </el-button>
-        <el-button @click="resetFilters">
-          <el-icon><RefreshRight /></el-icon> 重置
-        </el-button>
+      <div v-if="loading" class="text-center py-4">
+        <el-skeleton :rows="4" animated />
       </div>
-
-      <!-- 列表 -->
-      <el-table
-        :data="list"
-        v-loading="loading"
-        border
-        stripe
-        style="width: 100%; margin-top: 20px;"
-      >
+      <div v-else>
+        <el-table
+          :data="list"
+          style="width: 100%;"
+          size="small"
+          border
+          fit
+          highlight-current-row
+        >
         <el-table-column prop="name" label="名称" min-width="200" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
@@ -103,8 +108,7 @@
           </template>
         </el-table-column>
       </el-table>
-
-      <!-- 分页 -->
+      </div>
       <el-pagination
         v-if="total > 0"
         v-model:current-page="pagination.page"
@@ -150,6 +154,7 @@
               :value="cfg.id"
             />
           </el-select>
+          <div class="form-tip">配置请在 策略回测 -> 数据配置 中创建</div>
         </el-form-item>
         <el-form-item label="交易标的" prop="symbols">
           <el-select
@@ -508,7 +513,7 @@
 </template>
 
 <script>
-import { Plus, Search, RefreshRight } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { 
   createFactorEvaluation, 
   getFactorEvaluationTasks, 
@@ -526,7 +531,6 @@ export default {
   components: {
     Plus,
     Search,
-    RefreshRight,
     FactorDetailCharts
   },
   data() {
@@ -651,6 +655,11 @@ export default {
     await this.loadData()
     await this.loadDataConfigs()
     await this.loadFactors()
+  },
+  async activated() {
+    if (this.$route.query.factor_id) {
+      await this.showCreateDialog()
+    }
   },
   beforeUnmount() {
     this.stopPolling()
@@ -1561,21 +1570,31 @@ export default {
 }
 
 .header-bar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  .table-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .left-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .right-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex: 1;
+  }
 }
-
-.header-bar h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+.filter-item {
+  margin-right: 8px;
 }
-
-.filter-bar {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
+.text-center {
+  text-align: center;
+}
+.py-4 {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
 }
 
 .form-tip {

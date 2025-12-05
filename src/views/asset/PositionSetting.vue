@@ -165,7 +165,7 @@ onMounted(async () => {
 <style scoped>
 .position-setting-page {
   background: #f5f7fa;
-  min-height: 100vh;
+  min-height: 30vh;
   padding: 20px 0 0 0;
   display: flex;
   flex-direction: column;

@@ -97,29 +97,41 @@
       <!-- 因子分析（一级菜单） -->
       <el-sub-menu index="factor_analysis">
         <template #title>
-          <el-icon><Aim /></el-icon>
-          <span>因子</span>
+          <el-icon><Cpu /></el-icon>
+          <!-- <span>因子</span> -->
+          <span>ML</span>
         </template>
         <!-- 管理功能 -->
         <el-menu-item index="/factor_analysis/factors">因子管理</el-menu-item>
         <!-- <el-menu-item index="/factor_analysis/groups">因子组合</el-menu-item> -->
         <!-- 分析功能 -->
         <el-menu-item index="/factor_analysis/evaluation">因子分析</el-menu-item>
+        <el-menu-item index="/model/generator">标签生成器</el-menu-item>
+        <el-menu-item index="/model/trainer">训练器</el-menu-item>
+        <el-menu-item index="/model/models">模型管理</el-menu-item>
+        <el-menu-item index="/model/training">模型训练</el-menu-item>
         <!-- <el-menu-item index="/factor_analysis/backtest">因子回测</el-menu-item> -->
         <!-- 运维功能 -->
-        <el-menu-item index="/factor_analysis/monitoring">因子监控</el-menu-item>
-        <el-menu-item index="/factor_analysis/health">健康检查</el-menu-item>
+        <!-- <el-menu-item index="/factor_analysis/monitoring">因子监控</el-menu-item> -->
       </el-sub-menu>
       
       <!-- 模型 -->
-      <el-sub-menu index="model">
+      <!-- <el-sub-menu index="model">
         <template #title>
           <el-icon><Cpu /></el-icon>
           <span>模型</span>
-        </template>
-        <el-menu-item index="/model/training">模型训练</el-menu-item>
-        <el-menu-item index="/model/online">模型上线</el-menu-item>
-      </el-sub-menu>
+        </template> 
+        -->
+        <!-- 开发功能 -->
+        <!-- <el-menu-item index="/model/evaluation">模型评估</el-menu-item> -->
+        <!-- 管理功能 -->
+        <!-- 部署功能 -->
+        <!-- <el-menu-item index="/model/online">模型上线</el-menu-item> -->
+        <!-- 验证功能 -->
+        <!-- <el-menu-item index="/model/backtest">模型回测</el-menu-item> -->
+        <!-- 运维功能 -->
+        <!-- <el-menu-item index="/model/monitoring">模型监控</el-menu-item> -->
+      <!-- </el-sub-menu> -->
       
       <!-- 调度 -->
       <el-sub-menu index="scheduler">

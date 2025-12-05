@@ -142,6 +142,66 @@
                 :value="item"
               />
             </el-select>
+
+            <!-- Model config input -->
+            <div v-else-if="field.type === 'model'" class="model-config-editor">
+              <!-- Model selector -->
+              <div class="model-selector">
+                <el-select
+                  v-model="getModelConfig(field.name).model_id"
+                  filterable
+                  placeholder="请选择模型"
+                  style="width: 100%;"
+                  @change="(val) => onModelChange(field.name, val)"
+                  :loading="loadingModels[field.name]"
+                >
+                  <el-option
+                    v-for="model in availableModels[field.name] || []"
+                    :key="model.id"
+                    :label="`${model.name} (${model.version})`"
+                    :value="model.id"
+                  />
+                </el-select>
+                <div class="model-actions">
+                  <el-button
+                    size="small"
+                    @click="viewModelDetail(field.name)"
+                    :disabled="!getModelConfig(field.name).model_id"
+                  >
+                    查看
+                  </el-button>
+                  <el-button
+                    size="small"
+                    @click="copyFeatureConfig(field.name)"
+                    :disabled="!getModelConfig(field.name).feature_config || !getModelConfig(field.name).feature_config.factors || getModelConfig(field.name).feature_config.factors.length === 0"
+                  >
+                    复制 feature_config
+                  </el-button>
+                </div>
+              </div>
+              
+              <!-- Feature config JSON editor -->
+              <div class="feature-config-editor">
+                <div class="editor-header">
+                  <span>特征配置 (JSON)</span>
+                  <div class="editor-actions">
+                    <el-button size="small" @click="formatJSON(field.name)">格式化</el-button>
+                    <el-button size="small" @click="validateJSON(field.name)">验证</el-button>
+                  </div>
+                </div>
+                <el-input
+                  v-model="featureConfigText[field.name]"
+                  type="textarea"
+                  :rows="10"
+                  placeholder='请输入特征配置 JSON，例如: {"factors": [{"id": 1, "name": "factor1", "class_name": "model|Factor", "params": {}}], "encoder_classes": null}'
+                  @blur="onFeatureConfigBlur(field.name)"
+                  class="json-editor"
+                />
+                <div v-if="jsonError[field.name]" class="json-error">
+                  {{ jsonError[field.name] }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -151,6 +211,8 @@
 
 <script>
 import { ref, watch, nextTick, computed, getCurrentInstance } from 'vue'
+import { getModels, getModel } from '@/api/model'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'DynamicForm',
@@ -166,6 +228,11 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
+    // Model config related state
+    const availableModels = ref({})
+    const loadingModels = ref({})
+    const featureConfigText = ref({})
+    const jsonError = ref({})
     function getInitialFormData() {
       const data = {}
       props.fields.forEach(field => {
@@ -198,6 +265,28 @@ export default {
               : field.default !== undefined
                 ? field.default
                 : []
+          } else if (field.type === 'model') {
+            // Initialize model_config structure
+            const existingValue = props.modelValue[field.name]
+            if (existingValue && typeof existingValue === 'object') {
+              // 支持旧格式（数组）和新格式（字典）
+              let featureConfig = existingValue.feature_config
+              data[field.name] = {
+                model_id: existingValue.model_id || null,
+                model_path: existingValue.model_path || null,
+                feature_config: featureConfig
+              }
+            } else {
+              data[field.name] = {
+                model_id: null,
+                model_path: null,
+                feature_config: { factors: [], encoder_classes: null }
+              }
+            }
+            // Initialize feature config text
+            featureConfigText.value[field.name] = JSON.stringify(data[field.name].feature_config, null, 2)
+            // Load models list
+            loadModels(field.name)
           } else {
             data[field.name] = props.modelValue[field.name] !== undefined
               ? props.modelValue[field.name]
@@ -229,6 +318,17 @@ export default {
         if (val && typeof val === 'object') {
           Object.keys(val).forEach(key => {
             formData.value[key] = val[key]
+            // 如果是 model 类型，同步更新 feature_config 文本和确保结构完整
+            const field = props.fields.find(f => f.name === key && f.type === 'model')
+            if (field && val[key]) {
+              // 确保 model_config 结构完整
+              if (!formData.value[key].model_path && val[key].model_id) {
+                // 如果有 model_id 但没有 model_path，尝试加载
+                onModelChange(key, val[key].model_id)
+              } else if (val[key].feature_config) {
+                featureConfigText.value[key] = JSON.stringify(val[key].feature_config, null, 2)
+              }
+            }
           })
         }
       }
@@ -327,6 +427,145 @@ export default {
       )
     }
 
+    // Model config related functions
+    async function loadModels(fieldName) {
+      if (availableModels.value[fieldName]) {
+        return // Already loaded
+      }
+      loadingModels.value[fieldName] = true
+      try {
+        const { data } = await getModels({ page: 1, size: 1000 })
+        availableModels.value[fieldName] = data.items || data || []
+      } catch (error) {
+        console.error('Failed to load models:', error)
+        ElMessage.error('加载模型列表失败')
+        availableModels.value[fieldName] = []
+      } finally {
+        loadingModels.value[fieldName] = false
+      }
+    }
+
+    function getModelConfig(fieldName) {
+      if (!formData.value[fieldName]) {
+        formData.value[fieldName] = {
+          model_id: null,
+        model_path: null,
+        feature_config: { factors: [], encoder_classes: null }
+      }
+      }
+      return formData.value[fieldName]
+    }
+
+    async function onModelChange(fieldName, modelId) {
+      if (!modelId) {
+        getModelConfig(fieldName).feature_config = { factors: [], encoder_classes: null }
+        getModelConfig(fieldName).model_path = null
+        featureConfigText.value[fieldName] = '{"factors": [], "encoder_classes": null}'
+        jsonError.value[fieldName] = null
+        return
+      }
+
+      try {
+        const { data } = await getModel(modelId)
+        // feature_config 现在是字典格式：{'factors': [...], 'encoder_classes': {...}}
+        const featureConfig = data.feature_config || { factors: [], encoder_classes: null }
+        const modelConfig = getModelConfig(fieldName)
+        modelConfig.feature_config = featureConfig
+        modelConfig.model_path = data.file_path  // 自动保存 model_path
+        featureConfigText.value[fieldName] = JSON.stringify(featureConfig, null, 2)
+        jsonError.value[fieldName] = null
+        ElMessage.success('已加载模型的特征配置')
+      } catch (error) {
+        console.error('Failed to load model:', error)
+        ElMessage.error('加载模型详情失败')
+      }
+    }
+
+    function onFeatureConfigBlur(fieldName) {
+      try {
+        const text = featureConfigText.value[fieldName] || '{"factors": [], "encoder_classes": null}'
+        const parsed = JSON.parse(text)
+        // 支持字典格式：{'factors': [...], 'encoder_classes': {...}}
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          // 确保有 factors 字段
+          if (!parsed.factors) {
+            parsed.factors = []
+          }
+          getModelConfig(fieldName).feature_config = parsed
+        } else if (Array.isArray(parsed)) {
+          // 向后兼容：如果是数组，转换为字典格式
+          getModelConfig(fieldName).feature_config = { factors: parsed, encoder_classes: null }
+        } else {
+          throw new Error('特征配置必须是对象格式（包含 factors 和 encoder_classes）或数组格式')
+        }
+        jsonError.value[fieldName] = null
+      } catch (error) {
+        jsonError.value[fieldName] = `JSON 格式错误: ${error.message}`
+      }
+    }
+
+    function formatJSON(fieldName) {
+      try {
+        const text = featureConfigText.value[fieldName] || '{"factors": [], "encoder_classes": null}'
+        const parsed = JSON.parse(text)
+        featureConfigText.value[fieldName] = JSON.stringify(parsed, null, 2)
+        jsonError.value[fieldName] = null
+        ElMessage.success('格式化成功')
+      } catch (error) {
+        jsonError.value[fieldName] = `JSON 格式错误: ${error.message}`
+        ElMessage.error('JSON 格式错误，无法格式化')
+      }
+    }
+
+    function validateJSON(fieldName) {
+      try {
+        const text = featureConfigText.value[fieldName] || '{"factors": [], "encoder_classes": null}'
+        const parsed = JSON.parse(text)
+        // 支持字典格式和数组格式（向后兼容）
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          if (!parsed.factors) {
+            throw new Error('特征配置对象必须包含 factors 字段')
+          }
+        } else if (!Array.isArray(parsed)) {
+          throw new Error('特征配置必须是对象格式（包含 factors 和 encoder_classes）或数组格式')
+        }
+        jsonError.value[fieldName] = null
+        ElMessage.success('JSON 格式正确')
+      } catch (error) {
+        jsonError.value[fieldName] = `JSON 格式错误: ${error.message}`
+        ElMessage.error(`JSON 格式错误: ${error.message}`)
+      }
+    }
+
+    function copyFeatureConfig(fieldName) {
+      const featureConfig = getModelConfig(fieldName).feature_config
+      // 支持新格式（字典）和旧格式（数组）
+      const hasFactors = featureConfig && (
+        (Array.isArray(featureConfig) && featureConfig.length > 0) ||
+        (featureConfig.factors && featureConfig.factors.length > 0)
+      )
+      if (!hasFactors) {
+        ElMessage.warning('特征配置为空')
+        return
+      }
+      const text = JSON.stringify(featureConfig, null, 2)
+      navigator.clipboard.writeText(text).then(() => {
+        ElMessage.success('已复制到剪贴板')
+      }).catch(() => {
+        ElMessage.error('复制失败')
+      })
+    }
+
+    function viewModelDetail(fieldName) {
+      const modelId = getModelConfig(fieldName).model_id
+      if (!modelId) {
+        ElMessage.warning('请先选择模型')
+        return
+      }
+      // Open model detail in new window or navigate
+      window.open(`/model/models?id=${modelId}`, '_blank')
+    }
+
     return {
       formData,
       handleSubmit,
@@ -336,7 +575,19 @@ export default {
       handleArrayInputChange,
       handleFloatInput,
       shouldDisable,
-      chunk
+      chunk,
+      // Model config
+      availableModels,
+      loadingModels,
+      featureConfigText,
+      jsonError,
+      getModelConfig,
+      onModelChange,
+      onFeatureConfigBlur,
+      formatJSON,
+      validateJSON,
+      copyFeatureConfig,
+      viewModelDetail
     }
   }
 }
@@ -495,5 +746,59 @@ export default {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px 24px;
+}
+
+.model-config-editor {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.model-selector {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.model-selector .el-select {
+  flex: 1;
+}
+
+.model-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.feature-config-editor {
+  width: 100%;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.json-editor {
+  width: 100%;
+}
+
+.json-editor :deep(.el-textarea__inner) {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.json-error {
+  margin-top: 8px;
+  color: #f56c6c;
+  font-size: 12px;
 }
 </style> 

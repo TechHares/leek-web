@@ -138,7 +138,7 @@
                   <el-icon><RemoveFilled /></el-icon>
                 </el-button>
               </el-tooltip>
-              <el-tooltip content="回测" placement="top">
+              <!-- <el-tooltip content="回测" placement="top">
                 <el-button
                   size="small"
                   type="success"
@@ -147,7 +147,7 @@
                 >
                   <el-icon><Odometer /></el-icon>
                 </el-button>
-              </el-tooltip>
+              </el-tooltip> -->
               <el-tooltip v-if="!scope.row.is_enabled" content="删除" placement="top">
                 <el-button
                   size="small"

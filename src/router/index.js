@@ -188,12 +188,29 @@ const routes = [
         meta: { title: '因子监控' }
       },
       {
-        path: 'factor_analysis/health',
-        name: 'FactorHealth',
-        component: () => import('@/views/factor_analysis/FactorHealth.vue'),
-        meta: { title: '健康检查' }
+        path: 'model/generator',
+        name: 'LabelGeneratorManagement',
+        component: () => import('@/views/model/LabelGeneratorManagement.vue'),
+        meta: { title: '标签生成器' }
       },
-      
+      {
+        path: 'model/trainer',
+        name: 'TrainerManagement',
+        component: () => import('@/views/model/TrainerManagement.vue'),
+        meta: { title: '训练器' }
+      },
+      {
+        path: 'model/models',
+        name: 'ModelManagement',
+        component: () => import('@/views/model/ModelManagement.vue'),
+        meta: { title: '模型管理' }
+      },
+      {
+        path: 'model/training',
+        name: 'ModelTraining',
+        component: () => import('@/views/model/ModelTraining.vue'),
+        meta: { title: '模型训练' }
+      },
     ]
   },
   

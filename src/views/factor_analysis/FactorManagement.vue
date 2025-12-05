@@ -35,6 +35,9 @@
                   />
                 </el-select>
               </div>
+              <el-button @click="handleFilter" :loading="listLoading">
+                <el-icon><Search /></el-icon> 搜索
+              </el-button>
             </div>
             <div class="right-actions">
               <el-button
@@ -391,7 +394,7 @@
 <script>
 import { getFactors, createFactor, updateFactor, deleteFactor, enableFactor, disableFactor, getFactorTemplates } from '@/api/factor'
 import Pagination from '@/components/Pagination/index.vue'
-import { Plus, Edit, Delete, VideoPlay, RemoveFilled, DataAnalysis } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, VideoPlay, RemoveFilled, DataAnalysis, Search } from '@element-plus/icons-vue'
 import { formatDate, formatTag } from '@/utils/format'
 import DynamicForm from '@/components/DynamicForm.vue'
 
