@@ -96,7 +96,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
-import { getProjectConfig, saveProjectConfig, getAlarmTemplates, refreshMountDirs as refreshMountDirsApi, restartEngine as restartEngineApi } from '@/api/config'
+import { getProjectConfig, saveProjectConfig, getAlarmTemplates, refreshMountDirs as refreshMountDirsApi } from '@/api/config'
+import { controlEngine } from '@/api/project'
 import DynamicForm from '@/components/DynamicForm.vue'
 
 const form = ref({
@@ -218,11 +219,14 @@ const restartEngine = async () => {
       type: 'warning'
     })
     restarting.value = true
-    await restartEngineApi()
-    ElMessage.success('重启指令已发送')
+    await controlEngine('restart', (data) => {
+      // SSE 进度回调（可选：显示进度提示）
+      console.log('引擎重启进度:', data.message)
+    })
+    ElMessage.success('引擎重启成功')
   } catch (e) {
     if (e !== 'cancel') {
-      ElMessage.error('重启失败')
+      ElMessage.error(e.message || '重启失败')
     }
   } finally {
     restarting.value = false

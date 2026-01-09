@@ -1,4 +1,4 @@
-import apiClient from './client'
+import apiClient, { ssePost } from './client'
 
 // 获取项目列表
 export function getProjects() {
@@ -15,13 +15,14 @@ export function updateProject(id, data) {
 
 export function deleteProject(id) {
   return apiClient.delete(`/projects/${id}`)
-} 
+}
 
-// 单独为启用/暂停设置更长超时（20s）
-export function toggleProjectStatus(id, isEnabled) {
-  return apiClient.patch(
-    `/projects/${id}`,
-    { is_enabled: isEnabled },
-    { timeout: 20000 }
-  )
+/**
+ * 引擎控制接口（SSE 流式返回）
+ * @param {string} action - 'start' | 'stop' | 'restart'
+ * @param {function} onMessage - 收到消息时的回调 ({ status, message })
+ * @returns {Promise} - 完成或失败时 resolve/reject
+ */
+export function controlEngine(action, onMessage) {
+  return ssePost('/engines', { action }, onMessage)
 }

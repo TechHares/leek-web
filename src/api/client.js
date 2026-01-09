@@ -63,4 +63,75 @@ apiClient.interceptors.response.use(
   }
 )
 
-export default apiClient 
+/**
+ * SSE POST 请求（流式返回）
+ * @param {string} url - 请求路径
+ * @param {object} data - 请求体
+ * @param {function} onMessage - 收到消息时的回调
+ * @returns {Promise} - 完成或失败时 resolve/reject
+ */
+export async function ssePost(url, data, onMessage) {
+  const token = getToken()
+  const projectId = localStorage.getItem('current_project_id')
+  
+  if (!projectId && !isWhitelisted(url)) {
+    ElMessage.error('请选择项目')
+    throw new Error('未选择项目')
+  }
+  
+  const headers = {
+    'Content-Type': 'application/json'
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  if (projectId) {
+    headers['project-id'] = projectId
+  }
+  
+  const response = await fetch(`/api/v1${url}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data)
+  })
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('token')
+      const currentPath = window.location.pathname + window.location.search
+      safeRedirectToLogin(currentPath, true)
+    }
+    const error = await response.json().catch(() => ({ detail: '请求失败' }))
+    throw new Error(error.detail || '请求失败')
+  }
+  
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let lastData = null
+  
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    
+    const text = decoder.decode(value)
+    const lines = text.split('\n').filter(line => line.startsWith('data: '))
+    for (const line of lines) {
+      try {
+        const data = JSON.parse(line.slice(6))
+        lastData = data
+        if (onMessage) {
+          onMessage(data)
+        }
+      } catch (e) {
+        console.warn('Failed to parse SSE data:', line)
+      }
+    }
+  }
+  
+  if (lastData?.status === 'failed') {
+    throw new Error(lastData.message)
+  }
+  return lastData
+}
+
+export default apiClient

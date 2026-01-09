@@ -37,12 +37,6 @@ export function refreshMountDirs() {
   return apiClient.patch('/config/mount_dirs')
 }
 
-export function restartEngine() {
-  return apiClient.post('/config/restart', null, {
-    timeout: 120000 // 30秒超时，适合重启引擎这种耗时操作
-  })
-}
-
 export function resetPositionState() {
   return apiClient.post('/config/reset_position_state')
 }

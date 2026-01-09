@@ -73,64 +73,9 @@
               {{ scope.row.name }}
             </template>
           </el-table-column>
-          <el-table-column label="因子模版">
+          <el-table-column label="描述">
             <template #default="scope">
-              {{ getFactorName(scope.row.class_name) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="因子数量" width="100" align="center">
-            <template #default="scope">
-              {{ scope.row.factor_count || 0 }}
-            </template>
-          </el-table-column>
-          <el-table-column label="因子名称" min-width="200">
-            <template #default="scope">
-              <div v-if="scope.row.output_names && scope.row.output_names.length > 0">
-                <el-tooltip
-                  v-if="scope.row.output_names.length > 5"
-                  effect="light"
-                  placement="top"
-                  :hide-after="0"
-                >
-                  <template #content>
-                    <div style="max-width: 500px; max-height: 400px; overflow-y: auto;">
-                      <div
-                        v-for="(name, index) in scope.row.output_names"
-                        :key="index"
-                        style="padding: 2px 0; font-size: 12px;"
-                      >
-                        {{ name }}
-                      </div>
-                    </div>
-                  </template>
-                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                    <el-tag
-                      v-for="(name, index) in scope.row.output_names.slice(0, 2)"
-                      :key="index"
-                      size="small"
-                      type="info"
-                      effect="plain"
-                    >
-                      {{ name }}
-                    </el-tag>
-                    <el-tag size="small" type="info" effect="plain">
-                      +{{ scope.row.output_names.length - 2 }} 更多
-                    </el-tag>
-                  </div>
-                </el-tooltip>
-                <div v-else style="display: flex; flex-wrap: wrap; gap: 4px;">
-                  <el-tag
-                    v-for="(name, index) in scope.row.output_names"
-                    :key="index"
-                    size="small"
-                    type="info"
-                    effect="plain"
-                  >
-                    {{ name }}
-                  </el-tag>
-                </div>
-              </div>
-              <span v-else style="color: #b0b3b8;">-</span>
+              {{ getFactorName(scope.row.description) }}
             </template>
           </el-table-column>
           <el-table-column label="分类" width="150">
@@ -147,20 +92,23 @@
               <span v-if="!scope.row.categories || scope.row.categories.length === 0" style="color: #b0b3b8;">未分类</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
-            <template #default="scope">
-              <el-tag :type="scope.row.is_enabled ? 'success' : 'info'" size="small">
-                {{ scope.row.is_enabled ? '启用' : '禁用' }}
-              </el-tag>
-            </template>
-          </el-table-column>
           <el-table-column label="创建时间" width="180">
             <template #default="scope">
               {{ formatDate(scope.row.created_at) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="250">
+          <el-table-column label="操作" align="center" width="350">
             <template #default="scope">
+              <el-tooltip content="详情" placement="top">
+                <el-button
+                  size="small"
+                  @click="handleViewDetail(scope.row)"
+                  circle
+                >
+                  <el-icon><View /></el-icon>
+                </el-button>
+              </el-tooltip>
+              
               <el-tooltip content="编辑" placement="top">
                 <el-button
                   size="small"
@@ -168,6 +116,17 @@
                   circle
                 >
                   <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+              
+              <el-tooltip content="复制" placement="top">
+                <el-button
+                  size="small"
+                  type="info"
+                  @click="handleCopy(scope.row)"
+                  circle
+                >
+                  <el-icon><DocumentCopy /></el-icon>
                 </el-button>
               </el-tooltip>
               
@@ -388,13 +347,89 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 详情对话框 -->
+    <el-dialog
+      title="因子详情"
+      v-model="detailDialogVisible"
+      width="900px"
+    >
+      <div v-if="detailData" class="detail-content">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="ID">
+            {{ detailData.id }}
+          </el-descriptions-item>
+          <el-descriptions-item label="名称">
+            {{ detailData.name }}
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" :span="2">
+            {{ detailData.description || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="因子模版" :span="2">
+            {{ getFactorName(detailData.class_name) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="因子数量">
+            {{ detailData.factor_count || 0 }}
+          </el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="detailData.is_enabled ? 'success' : 'info'" size="small">
+              {{ detailData.is_enabled ? '启用' : '禁用' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="分类" :span="2">
+            <el-tag
+              v-for="cat in (detailData.categories || [])"
+              :key="cat"
+              size="small"
+              :type="getCategoryType(cat)"
+              style="margin-right: 4px;"
+            >
+              {{ getCategoryLabel(cat) }}
+            </el-tag>
+            <span v-if="!detailData.categories || detailData.categories.length === 0" style="color: #b0b3b8;">未分类</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="创建时间">
+            {{ formatDate(detailData.created_at) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="更新时间">
+            {{ detailData.updated_at ? formatDate(detailData.updated_at) : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="因子参数" :span="2">
+            <div v-if="detailData.params && Object.keys(detailData.params).length > 0" class="params-display">
+              <pre>{{ JSON.stringify(detailData.params, null, 2) }}</pre>
+            </div>
+            <span v-else style="color: #b0b3b8;">无参数</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="因子名称" :span="2">
+            <div v-if="detailData.output_names && detailData.output_names.length > 0" class="output-names-display">
+              <el-tag
+                v-for="(name, index) in detailData.output_names"
+                :key="index"
+                size="small"
+                type="info"
+                effect="plain"
+                style="margin: 4px 4px 4px 0;"
+              >
+                {{ name }}
+              </el-tag>
+            </div>
+            <span v-else style="color: #b0b3b8;">-</span>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="detailDialogVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { getFactors, createFactor, updateFactor, deleteFactor, enableFactor, disableFactor, getFactorTemplates } from '@/api/factor'
 import Pagination from '@/components/Pagination/index.vue'
-import { Plus, Edit, Delete, VideoPlay, RemoveFilled, DataAnalysis, Search } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, VideoPlay, RemoveFilled, DataAnalysis, Search, DocumentCopy, View } from '@element-plus/icons-vue'
 import { formatDate, formatTag } from '@/utils/format'
 import DynamicForm from '@/components/DynamicForm.vue'
 
@@ -413,6 +448,8 @@ export default {
       },
       dialogFormVisible: false,
       dialogStatus: '',
+      detailDialogVisible: false,
+      detailData: null,
       temp: {
         id: undefined,
         name: '',
@@ -575,24 +612,30 @@ export default {
         
         // 如果是创建，初始化参数和分类
         if (this.dialogStatus === 'create') {
-          this.temp.params = {}
-          // 根据模块名和类名推断分类（仅作为默认值，用户可修改）
-          const moduleName = class_name.split('|')[0] || ''
-          const className = (class_name.split('|')[1] || '').toLowerCase()
-          const inferredCategories = []
-          
-          // 时间因子
-          if (moduleName.includes('time') || className.includes('time')) {
-            inferredCategories.push('time')
+          // 只有在参数为空时才重置（避免覆盖复制时的参数）
+          if (!this.temp.params || Object.keys(this.temp.params).length === 0) {
+            this.temp.params = {}
           }
-          // 技术指标
-          if (moduleName.includes('technical') || ['ma', 'rsi', 'atr', 'macd', 'boll'].some(x => className.includes(x))) {
-            inferredCategories.push('technical')
+          // 只有在分类为空时才推断分类（避免覆盖复制时的分类）
+          if (!this.temp.categories || this.temp.categories.length === 0) {
+            // 根据模块名和类名推断分类（仅作为默认值，用户可修改）
+            const moduleName = class_name.split('|')[0] || ''
+            const className = (class_name.split('|')[1] || '').toLowerCase()
+            const inferredCategories = []
+            
+            // 时间因子
+            if (moduleName.includes('time') || className.includes('time')) {
+              inferredCategories.push('time')
+            }
+            // 技术指标
+            if (moduleName.includes('technical') || ['ma', 'rsi', 'atr', 'macd', 'boll'].some(x => className.includes(x))) {
+              inferredCategories.push('technical')
+            }
+            // Alpha因子集合通常包含多种类型，不自动分类，让用户手动选择
+            
+            // 如果没有推断出分类，不设置默认值，让用户手动选择
+            this.temp.categories = inferredCategories.length > 0 ? inferredCategories : []
           }
-          // Alpha因子集合通常包含多种类型，不自动分类，让用户手动选择
-          
-          // 如果没有推断出分类，不设置默认值，让用户手动选择
-          this.temp.categories = inferredCategories.length > 0 ? inferredCategories : []
         }
       }
     },
@@ -665,6 +708,39 @@ export default {
         path: '/factor_analysis/evaluation',
         query: { factor_id: row.id }
       })
+    },
+    handleViewDetail(row) {
+      // 显示因子详情
+      this.detailData = { ...row }
+      this.detailDialogVisible = true
+    },
+    async handleCopy(row) {
+      // 复制当前因子配置
+      this.resetTemp()
+      // 复制参数和分类（深拷贝）
+      const copiedParams = row.params ? JSON.parse(JSON.stringify(row.params)) : {}
+      const copiedCategories = row.categories && row.categories.length > 0 ? [...row.categories] : []
+      // 设置基本信息，包括复制的参数和分类
+      this.temp = {
+        name: row.name,
+        description: row.description || '',
+        class_name: row.class_name,
+        params: copiedParams,
+        categories: copiedCategories,
+        is_enabled: false
+      }
+      this.dialogStatus = 'create'
+      // 刷新因子模板列表，确保获取最新模板
+      await this.getFactorTemplates()
+      // 调用 handleFactorTemplateChange 来初始化模板
+      // 由于我们已经设置了 params 和 categories，handleFactorTemplateChange 不会重置它们
+      this.handleFactorTemplateChange(row.class_name)
+      this.dialogFormVisible = true
+      this.$nextTick(() => {
+        // 强制更新表单，确保参数正确显示
+        this.factorParamFormKey++
+        this.$refs['dataForm']?.clearValidate()
+      })
     }
   }
 }
@@ -715,5 +791,34 @@ export default {
   background: #fafafa;
   border-radius: 4px;
   width: 100%;
+}
+
+.detail-content {
+  padding: 10px 0;
+}
+
+.params-display {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+}
+
+.params-display pre {
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #606266;
+}
+
+.output-names-display {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background: #f5f7fa;
+  border-radius: 4px;
 }
 </style>

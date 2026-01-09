@@ -150,7 +150,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { Menu, User, ArrowDown, Setting, Plus, Open, TurnOff, Loading } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getProjects, createProject, updateProject, deleteProject, toggleProjectStatus } from '@/api/project'
+import { getProjects, createProject, updateProject, deleteProject, controlEngine } from '@/api/project'
 import { formatDate } from '@/utils/format'
 
 const router = useRouter()
@@ -263,16 +263,20 @@ const handleDeleteProject = async (row) => {
 const handleToggleProjectStatus = async (row) => {
   try {
     const action = row.is_enabled ? '暂停' : '启用'
+    const engineAction = row.is_enabled ? 'stop' : 'start'
     await ElMessageBox.confirm(`确定要${action}该项目吗？`, '提示', {
       type: 'warning'
     })
     isStatusToggling.value = true
-    await toggleProjectStatus(row.id, !row.is_enabled)
+    await controlEngine(engineAction, (data) => {
+      // SSE 进度回调（可选：显示进度提示）
+      console.log('引擎操作进度:', data.message)
+    })
     ElMessage.success(`${action}成功`)
     loadProjects()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('操作失败')
+      ElMessage.error(error.message || '操作失败')
     }
   } finally {
     isStatusToggling.value = false
