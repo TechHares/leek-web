@@ -108,6 +108,24 @@
         </template>
       </el-form-item>
 
+      <el-divider content-position="left">K线模拟</el-divider>
+      <el-form-item>
+        <template #label>
+          启用K线模拟
+          <el-tooltip placement="top" content="开启后将使用1分钟K线模拟目标周期的价格变化过程，策略可以在每根1分钟K线时看到未完成的目标周期K线">
+            <el-icon class="label-q"><InfoFilled /></el-icon>
+          </el-tooltip>
+        </template>
+        <el-switch 
+          v-model="form.simulate_kline" 
+          active-text="启用"
+          inactive-text="禁用"
+        />
+        <div class="mini-summary" style="margin-top: 4px;">
+          开启后使用1分钟K线合并模拟目标周期，提供更细粒度的价格变化过程
+        </div>
+      </el-form-item>
+
       <el-divider content-position="left">策略与运行模式</el-divider>
       <el-row :gutter="20">
         <el-col :span="12">
@@ -504,6 +522,8 @@ export default {
         // 性能优化配置
         use_cache: false,
         log_file: false,
+        // K线模拟
+        simulate_kline: false,
         // 覆盖项已取消，但保留内部状态用于展示数据配置摘要
         market: '',
         quote_currency: '',
@@ -604,6 +624,9 @@ export default {
         this.form.market = c.market ?? this.form.market
         this.form.quote_currency = c.quote_currency ?? this.form.quote_currency
         this.form.ins_type = c.ins_type ?? this.form.ins_type
+        
+        // K线模拟
+        this.form.simulate_kline = c.simulate_kline ?? this.form.simulate_kline
 
         // 先设置运行模式和策略类
         this.form.run_mode = runMode
@@ -953,6 +976,8 @@ export default {
       payload.use_cache = this.form.use_cache
       // 日志选项
       payload.log_file = !!this.form.log_file
+      // K线模拟
+      payload.simulate_kline = !!this.form.simulate_kline
       
       // 组装风控参数（仅传已启用的）
       payload.risk_policies = (this.riskPolicyTemplates || [])
