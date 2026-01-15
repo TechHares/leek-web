@@ -43,7 +43,7 @@
             </el-tabs>
           </div>
           <router-view v-slot="{ Component }">
-            <keep-alive>
+            <keep-alive :key="keepAliveKey">
               <component :is="Component" />
             </keep-alive>
           </router-view>
@@ -153,6 +153,8 @@ import { safeRedirectToLogin } from '@/utils/redirect'
 import Sidebar from '@/components/Sidebar.vue'
 import Header from '@/components/Header.vue'
 import { Expand, Fold } from '@element-plus/icons-vue'
+import { emitter } from '@/utils/emitter'
+import { getCurrentProjectId } from '@/utils/projectStorage'
 
 const router = useRouter()
 const loading = ref(true)
@@ -161,6 +163,10 @@ const sidebarCollapsed = ref(false)
 const profileDialogVisible = ref(false)
 const systemConfigDialogVisible = ref(false)
 const isSmallScreen = ref(window.innerWidth < 768)
+
+// 项目切换相关
+const currentProjectId = ref(getCurrentProjectId())
+const keepAliveKey = ref(0)
 
 // 多标签页功能
 const tabs = ref([
@@ -407,10 +413,19 @@ onMounted(() => {
   checkAuthentication()
   window.addEventListener('resize', handleResize)
   handleResize() // 初始化检查屏幕大小
+  
+  // 监听项目切换事件
+  emitter.on('project-changed', (projectId) => {
+    currentProjectId.value = projectId
+    // 递增 key 强制刷新 keep-alive 缓存，所有组件将重新创建并加载新项目数据
+    keepAliveKey.value++
+  })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  // 清理项目切换事件监听
+  emitter.off('project-changed')
 })
 </script>
 

@@ -152,6 +152,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProjects, createProject, updateProject, deleteProject, controlEngine } from '@/api/project'
 import { formatDate } from '@/utils/format'
+import { getCurrentProjectId, setCurrentProjectId, clearCurrentProjectId } from '@/utils/projectStorage'
+import { emitter } from '@/utils/emitter'
 
 const router = useRouter()
 
@@ -215,17 +217,23 @@ const projectRules = {
 const loadProjects = async () => {
   const res = await getProjects()
   projects.value = res.data || []
-  // 读取本地已选 projectId
-  const savedId = localStorage.getItem('current_project_id')
-  // 检查本地 id 是否在项目列表中
+  
+  // 使用双层存储：优先 sessionStorage，回退到 localStorage
+  const savedId = getCurrentProjectId()
+  
+  // 检查保存的项目ID是否在项目列表中
   if (savedId && projects.value.some(p => String(p.id) === String(savedId))) {
     selectedProjectId.value = String(savedId)
+    // 确保两个storage都有值
+    setCurrentProjectId(savedId)
   } else if (projects.value.length > 0) {
+    // 如果没有有效的保存ID，选择第一个项目
     selectedProjectId.value = String(projects.value[0].id)
-    localStorage.setItem('current_project_id', String(projects.value[0].id))
+    setCurrentProjectId(projects.value[0].id)
   } else {
+    // 没有任何项目，清理并打开项目管理对话框
     selectedProjectId.value = null
-    localStorage.removeItem('current_project_id')
+    clearCurrentProjectId()
     projectDialogVisible.value = true
   }
 }
@@ -313,8 +321,14 @@ const openProjectDialog = () => {
 }
 
 const handleProjectChange = (id) => {
-  localStorage.setItem('current_project_id', String(id))
-  window.location.reload() // 切换项目后刷新页面
+  // 保存到双层存储
+  setCurrentProjectId(id)
+  // 更新当前选中的项目
+  selectedProjectId.value = String(id)
+  // 触发全局事件，通知其他组件项目已切换
+  emitter.emit('project-changed', String(id))
+  // 提示用户
+  ElMessage.success('项目已切换')
 }
 
 onMounted(() => {

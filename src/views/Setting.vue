@@ -93,12 +93,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import { getProjectConfig, saveProjectConfig, getAlarmTemplates, refreshMountDirs as refreshMountDirsApi } from '@/api/config'
 import { controlEngine } from '@/api/project'
 import DynamicForm from '@/components/DynamicForm.vue'
+import { emitter } from '@/utils/emitter'
+import { getCurrentProjectId } from '@/utils/projectStorage'
 
 const form = ref({
   log_level: 'INFO',
@@ -115,7 +117,7 @@ const restarting = ref(false)
 const refreshingMountDirs = ref(false)
 
 const loadConfig = async () => {
-  const projectId = localStorage.getItem('current_project_id')
+  const projectId = getCurrentProjectId()
   if (!projectId) {
     ElMessage.error('请先选择项目')
     return
@@ -137,7 +139,7 @@ const loadConfig = async () => {
 }
 
 const saveConfig = async () => {
-  const projectId = localStorage.getItem('current_project_id')
+  const projectId = getCurrentProjectId()
   if (!projectId) {
     ElMessage.error('请先选择项目')
     return
@@ -254,6 +256,15 @@ const refreshMountDirs = async () => {
 
 onMounted(() => {
   loadConfig()
+  // 监听项目切换事件
+  emitter.on('project-changed', () => {
+    loadConfig()
+  })
+})
+
+onUnmounted(() => {
+  // 清理事件监听
+  emitter.off('project-changed')
 })
 
 watch(() => form.value.alert_config, v => {

@@ -2,6 +2,7 @@ import axios from 'axios'
 import { getToken } from './auth'
 import { ElMessage } from 'element-plus'
 import { safeRedirectToLogin } from '@/utils/redirect'
+import { getCurrentProjectId } from '@/utils/projectStorage'
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
@@ -29,7 +30,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    const projectId = localStorage.getItem('current_project_id')
+    const projectId = getCurrentProjectId()
     // 检查是否需要 project_id
     if (!projectId && !isWhitelisted(config.url)) {
       ElMessage.error('请选择项目：' + config.url)
@@ -72,7 +73,7 @@ apiClient.interceptors.response.use(
  */
 export async function ssePost(url, data, onMessage) {
   const token = getToken()
-  const projectId = localStorage.getItem('current_project_id')
+  const projectId = getCurrentProjectId()
   
   if (!projectId && !isWhitelisted(url)) {
     ElMessage.error('请选择项目')

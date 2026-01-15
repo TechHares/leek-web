@@ -86,6 +86,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated, computed } from 'vue'
 import { getDashboardOverview } from '@/api/dashboard'
+import { emitter } from '@/utils/emitter'
+import { getCurrentProjectId } from '@/utils/projectStorage'
 
 const state = ref({})
 const barList = ref([])
@@ -99,7 +101,7 @@ let timer = null
 const fetchData = async () => {
   if (document.hidden) return;
   try {
-    const projectId = localStorage.getItem('current_project_id')
+    const projectId = getCurrentProjectId()
     if (!projectId) {
       return
     }
@@ -155,12 +157,16 @@ onActivated(() => {
   }
   fetchData()
   timer = setInterval(fetchData, 8000)
+  // 监听项目切换事件
+  emitter.on('project-changed', fetchData)
 })
 onDeactivated(() => {
   if (timer) {
     clearInterval(timer)
     timer = null
   }
+  // 清理事件监听
+  emitter.off('project-changed', fetchData)
 })
 </script>
 
